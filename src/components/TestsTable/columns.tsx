@@ -1,0 +1,267 @@
+import { type ColumnDef } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Edit,
+  FileText,
+  Copy,
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { type Test } from "@/components/TestTable/columns";
+import { cn } from "@/lib/utils";
+
+// Get status badge properties
+const getStatusBadgeProps = (status: Test["test_status"]) => {
+  switch (status) {
+    case "draft":
+      return {
+        variant: "outline" as const,
+        className: "border-gray-300 text-gray-600 bg-gray-50",
+      };
+    case "scheduled":
+      return {
+        variant: "outline" as const,
+        className: "border-blue-300 text-blue-700 bg-blue-50",
+      };
+    case "ongoing":
+      return {
+        variant: "outline" as const,
+        className: "border-yellow-300 text-yellow-700 bg-yellow-50",
+      };
+    case "completed":
+      return {
+        variant: "outline" as const,
+        className: "border-green-300 text-green-700 bg-green-50",
+      };
+    default:
+      return {
+        variant: "outline" as const,
+        className: "",
+      };
+  }
+};
+
+interface ColumnsProps {
+  onDelete: (testId: string) => void;
+  onDuplicate: (testId: string) => void;
+}
+
+export const createColumns = ({
+  onDelete,
+  onDuplicate,
+}: ColumnsProps): ColumnDef<Test>[] => [
+  {
+    accessorKey: "test_id",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 p-0 font-bold text-left justify-start hover:bg-transparent"
+        >
+          Test ID
+          {column.getIsSorted() === "asc" ? (
+            <ArrowUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="font-medium">{row.getValue("test_id")}</div>
+    ),
+  },
+  {
+    accessorKey: "test_name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 p-0 font-bold text-left justify-start hover:bg-transparent"
+        >
+          Test Name
+          {column.getIsSorted() === "asc" ? (
+            <ArrowUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <Link
+        to={`/recruiter/test/edit/${row.getValue("test_id")}`}
+        className="hover:text-primary transition-colors"
+      >
+        {row.getValue("test_name")}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "test_status",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 p-0 font-bold text-left justify-start hover:bg-transparent"
+        >
+          Status
+          {column.getIsSorted() === "asc" ? (
+            <ArrowUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const status = row.getValue("test_status") as Test["test_status"];
+      const { variant, className } = getStatusBadgeProps(status);
+      return (
+        <Badge variant={variant} className={cn(className)}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value === "all" || row.getValue(id) === value;
+    },
+  },
+  {
+    accessorKey: "test_created_at",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 p-0 font-bold text-left justify-start hover:bg-transparent"
+        >
+          Created At
+          {column.getIsSorted() === "asc" ? (
+            <ArrowUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return new Date(row.getValue("test_created_at")).toLocaleDateString();
+    },
+  },
+  {
+    accessorKey: "test_duration",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 p-0 font-bold text-left justify-start hover:bg-transparent"
+        >
+          Duration
+          {column.getIsSorted() === "asc" ? (
+            <ArrowUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return `${row.getValue("test_duration")} mins`;
+    },
+  },
+  {
+    accessorKey: "total_candidate",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 p-0 font-bold text-left justify-start hover:bg-transparent"
+        >
+          Candidates
+          {column.getIsSorted() === "asc" ? (
+            <ArrowUp className="ml-2 h-4 w-4" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ArrowDown className="ml-2 h-4 w-4" />
+          ) : (
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          )}
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      return row.getValue("total_candidate");
+    },
+  },
+  {
+    id: "actions",
+    header: () => <div className="text-center font-bold">Actions</div>,
+    cell: ({ row }) => {
+      const test = row.original;
+      return (
+        <div className="flex items-center gap-1">
+          <Link to={`/recruiter/test/edit/${test.test_id}`}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Edit Test"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <Link to={`/recruiter/test/report/${test.test_id}`}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="View Report"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onDuplicate(test.test_id)}
+            title="Duplicate Test"
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => onDelete(test.test_id)}
+            title="Delete Test"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+  },
+];

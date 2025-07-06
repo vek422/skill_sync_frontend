@@ -1,0 +1,94 @@
+import { createBrowserRouter } from "react-router-dom";
+
+import Login from "../pages/Login";
+import Dashboard from "../pages/recruiter/Dashboard-bal";
+import TestCreate from "../pages/recruiter/TestCreate";
+import TestEdit from "../pages/recruiter/TestEdit";
+import TestPage from "../pages/recruiter/TestPage";
+import Report from "../pages/recruiter/Report";
+import CandidateUpload from "../pages/recruiter/CandidateUpload";
+import Assessment from "../pages/candidate/Assessment";
+import Chatbot from "../pages/candidate/Chatbot";
+import Completed from "../pages/candidate/Completed";
+import { withAuthGaurd } from "../components/AuthGaurd";
+import FallbackPage from "@/pages/FallbackPage";
+import CandidateRegister from "@/pages/candidate/Register";
+import RecruiterRegister from "@/pages/recruiter/Register";
+import RegisterSelect from "@/pages/Register";
+import { RecruiterLayout } from "@/components/layouts/RecruiterLayout";
+import Tests from "@/pages/recruiter/Tests";
+
+
+export const router = createBrowserRouter([
+    {
+        path: "/login",
+        Component: Login,
+    },
+    {
+        path: "/register",
+        Component: RegisterSelect,
+    },
+    {
+        path: "/register/candidate",
+        Component: CandidateRegister,
+    },
+    {
+        path: "/register/recruiter",
+        Component: RecruiterRegister
+    },
+
+    {
+        path: "/recruiter",
+        Component: withAuthGaurd(RecruiterLayout),
+        children: [
+            {
+                path: "dashboard",
+                Component: Dashboard,
+            },
+            {
+                path: "tests",
+                Component: Tests,
+            },
+            {
+                path: "test/create",
+                Component: TestCreate,
+            },
+            {
+                path: "test/:testId",
+                Component: TestPage,
+            },
+            {
+                path: "test/:id/edit",
+                Component: TestEdit,
+            },
+            {
+                path: "test/:id/report",
+                Component: Report,
+            },
+            {
+                path: "candidates/upload",
+                Component: CandidateUpload,
+            }
+        ]
+    },
+    {
+        path: "/candidate/tests",
+        Component: withAuthGaurd(Assessment),
+    },
+    {
+        path: "/candidate/assessment/:id",
+        Component: withAuthGaurd(Assessment),
+    },
+    {
+        path: "/candidate/test/:id",
+        Component: withAuthGaurd(Chatbot),
+    },
+    {
+        path: "/candidate/completed",
+        Component: withAuthGaurd(Completed),
+    },
+    {
+        path: "*",
+        Component: FallbackPage,
+    },
+]);

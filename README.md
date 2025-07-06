@@ -6,9 +6,9 @@ This repository contains the **frontend** application for the LangGraph-based AI
 
 ### 🚀 Goals
 
-- Provide clear guidelines for folder layout, naming conventions, and coding standards.
-- Define flows for two roles: **Recruiter** and **Candidate**.
-- Enable AI-driven code generation based on consistent patterns.
+* Provide clear guidelines for folder layout, naming conventions, and coding standards.
+* Define flows for two roles: **Recruiter** and **Candidate**.
+* Enable AI-driven code generation based on consistent patterns.
 
 ---
 
@@ -57,19 +57,16 @@ src/
    ```bash
    npm install
    ```
-
 2. **Run in development**
 
    ```bash
    npm run dev
    ```
-
 3. **Build for production**
 
    ```bash
    npm run build
    ```
-
 4. **Preview production build**
 
    ```bash
@@ -82,14 +79,14 @@ src/
 
 ### 1. **File & Folder Naming**
 
-- Use **PascalCase** for React components (`MyComponent.tsx`).
-- Use **camelCase** for hooks, utility functions (`useAuth.ts`, `fetchTests`).
-- Folder names are **lowercase** and plural where appropriate (`components`, `utils`).
+* Use **PascalCase** for React components (`MyComponent.tsx`).
+* Use **camelCase** for hooks, utility functions (`useAuth.ts`, `fetchTests`).
+* Folder names are **lowercase** and plural where appropriate (`components`, `utils`).
 
 ### 2. **Component Structure**
 
-- Each component file exports a **single default** React component.
-- Follow the pattern:
+* Each component file exports a **single default** React component.
+* Follow the pattern:
 
   ```tsx
   import React from "react";
@@ -99,12 +96,12 @@ src/
     /* prop definitions */
   }
 
-  const MyComponent: React.FC<Props> = (
-    {
-      /* destructure props */
-    }
-  ) => {
-    return <div className="p-4 rounded-2xl shadow">{/* JSX markup */}</div>;
+  const MyComponent: React.FC<Props> = ({ /* destructure props */ }) => {
+    return (
+      <div className="p-4 rounded-2xl shadow">
+        {/* JSX markup */}
+      </div>
+    );
   };
 
   export default MyComponent;
@@ -112,28 +109,27 @@ src/
 
 ### 3. **UI Library Usage (shadcn/ui)**
 
-- Import only needed components:
+* Import only needed components:
 
   ```ts
   import { Card, CardContent } from "@/components/shared/Card";
   ```
-
-- Use Tailwind utility classes for layout and spacing.
-- Prefer `Card`, `Button`, `Input`, `Dropdown`, and `Dialog` for common UIs.
+* Use Tailwind utility classes for layout and spacing.
+* Prefer `Card`, `Button`, `Input`, `Dropdown`, and `Dialog` for common UIs.
 
 ### 4. **State Management (Redux Toolkit)**
 
-- We use **@reduxjs/toolkit** for predictable and scalable global state.
+* We use **@reduxjs/toolkit** for predictable and scalable global state.
 
-- Organize state via **slices**, each with its own reducer and actions.
+* Organize state via **slices**, each with its own reducer and actions.
 
-- Configure the store in `src/store/index.ts`:
+* Configure the store in `src/store/index.ts`:
 
   ```ts
-  import { configureStore } from "@reduxjs/toolkit";
-  import authReducer from "./authSlice";
-  import testReducer from "./testSlice";
-  import chatReducer from "./chatSlice";
+  import { configureStore } from '@reduxjs/toolkit';
+  import authReducer from './authSlice';
+  import testReducer from './testSlice';
+  import chatReducer from './chatSlice';
 
   export const store = configureStore({
     reducer: {
@@ -147,10 +143,10 @@ src/
   export type AppDispatch = typeof store.dispatch;
   ```
 
-- Example **`authSlice.ts`**:
+* Example **`authSlice.ts`**:
 
   ```ts
-  import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+  import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
   interface AuthState {
     user: User | null;
@@ -159,11 +155,11 @@ src/
 
   const initialState: AuthState = {
     user: null,
-    token: "",
+    token: '',
   };
 
   const authSlice = createSlice({
-    name: "auth",
+    name: 'auth',
     initialState,
     reducers: {
       setUser(state, action: PayloadAction<User>) {
@@ -171,7 +167,7 @@ src/
       },
       logout(state) {
         state.user = null;
-        state.token = "";
+        state.token = '';
       },
     },
   });
@@ -182,9 +178,9 @@ src/
 
 ### 5. **Routing & Layout** **Routing & Layout**
 
-- Use **React Router** with nested routes.
-- Wrap protected routes in `ProtectedRoutes.tsx` that checks `authStore` for role.
-- Example:
+* Use **React Router** with nested routes.
+* Wrap protected routes in `ProtectedRoutes.tsx` that checks `authStore` for role.
+* Example:
 
   ```tsx
   <Routes>
@@ -200,28 +196,66 @@ src/
 
 ### 6. **API Contracts (Mock First)**
 
-- Define TypeScript interfaces for backend responses:
+* Define TypeScript interfaces for backend responses:
 
   ```ts
-  interface SkillNode {
-    id: string;
-    name: string;
-    children: SkillNode[];
-  }
-  interface Test {
-    id: string;
-    name: string;
-    graph: SkillNode[];
-  }
-  interface MCQ {
-    id: string;
-    question: string;
-    options: string[];
-    answer: number;
-  }
+  interface SkillNode { id: string; name: string; children: SkillNode[]; }
+  interface Test { id: string; name: string; graph: SkillNode[]; }
+  interface MCQ { id: string; question: string; options: string[]; answer: number; }
   ```
+* Implement `api.ts` with placeholder `Promise.resolve(mockData)` to simulate.
 
-- Implement `api.ts` with placeholder `Promise.resolve(mockData)` to simulate.
+---
+
+## 📍 Frontend Routes
+
+List of client-side routes and their corresponding components:
+
+| Route                          | Component Path                            | Description                       |
+| ------------------------------ | ----------------------------------------- | --------------------------------- |
+| `/login`                       | `src/pages/Login.tsx`                     | Authentication page               |
+| `/recruiter/dashboard`         | `src/pages/recruiter/Dashboard.tsx`       | Recruiter overview and stats      |
+| `/recruiter/test/create`       | `src/pages/recruiter/TestCreate.tsx`      | Create a new test and upload JD   |
+| `/recruiter/test/:id/edit`     | `src/pages/recruiter/TestEdit.tsx`        | Edit skill graph and test details |
+| `/recruiter/test/:id/report`   | `src/pages/recruiter/Report.tsx`          | View generated test report        |
+| `/recruiter/candidates/upload` | `src/pages/recruiter/CandidateUpload.tsx` | Bulk add candidates via CSV       |
+| `/candidate/tests`             | `src/pages/candidate/Assessment.tsx`      | List of assigned assessments      |
+| `/candidate/assessment/:id`    | `src/pages/candidate/Assessment.tsx`      | Assessment landing page           |
+| `/candidate/test/:id`          | `src/pages/candidate/Chatbot.tsx`         | Chatbot-style MCQ interface       |
+| `/candidate/completed`         | `src/pages/candidate/Completed.tsx`       | Test completion confirmation      |
+
+---
+
+## 🔌 Backend API Endpoints
+
+List of RESTful API endpoints required for each route:
+
+### Authentication
+
+* `POST /api/auth/login`
+
+  * Request: `{ email: string; password: string }`
+  * Response: `{ token: string; user: { id: string; role: string; } }`
+
+### Recruiter Endpoints
+
+| Route             | Method | Path                                  | Request Body                                | Response Body                                     |
+| ----------------- | ------ | ------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
+| Dashboard Data    | GET    | `/api/recruiter/dashboard`            | -                                           | `{ tests: TestSummary[]; stats: DashboardStats }` |
+| Create Test       | POST   | `/api/recruiter/tests`                | `{ name: string; jobDescription: string; }` | `{ testId: string; graph: SkillNode[] }`          |
+| Get Test Details  | GET    | `/api/recruiter/tests/:id`            | -                                           | `Test`                                            |
+| Update Graph      | PUT    | `/api/recruiter/tests/:id/graph`      | `{ graph: SkillNode[] }`                    | `{ success: boolean; }`                           |
+| Get Report        | GET    | `/api/recruiter/tests/:id/report`     | -                                           | `TestReport`                                      |
+| Upload Candidates | POST   | `/api/recruiter/tests/:id/candidates` | `FormData` (CSV & resumes)                  | `{ importedCount: number; errors: string[] }`     |
+
+### Candidate Endpoints
+
+| Route                    | Method | Path                               | Request Body                           | Response Body                                 |
+| ------------------------ | ------ | ---------------------------------- | -------------------------------------- | --------------------------------------------- |
+| Get Assigned Assessments | GET    | `/api/candidate/tests`             | -                                      | `TestSummary[]`                               |
+| Get Assessment Landing   | GET    | `/api/candidate/tests/:id`         | -                                      | `Test`                                        |
+| Submit Answer            | POST   | `/api/candidate/tests/:id/answers` | `{ questionId: string; answer: any; }` | `{ nextQuestion?: MCQ; completed: boolean; }` |
+| Submit Complete          | POST   | `/api/candidate/tests/:id/submit`  | -                                      | `{ score: number; feedback: string; }`        |
 
 ---
 
@@ -243,10 +277,10 @@ This README is formatted so an AI agent can:
 
 ## ✅ Contribution & Testing
 
-- Write unit tests with **Vitest** under `src/__tests__/`.
-- Use React Testing Library for component tests.
-- Lint with **ESLint** and format with **Prettier**.
+* Write unit tests with **Vitest** under `src/__tests__/`.
+* Use React Testing Library for component tests.
+* Lint with **ESLint** and format with **Prettier**.
 
 ---
 
-_Last updated: June 23, 2025_
+*Last updated: June 23, 2025*
