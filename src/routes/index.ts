@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import Login from "../pages/Login";
-import Dashboard from "../pages/recruiter/Dashboard-bal";
+import Dashboard from "../pages/recruiter/Dashboard";
 import TestCreate from "../pages/recruiter/TestCreate";
 import TestEdit from "../pages/recruiter/TestEdit";
 import TestPage from "../pages/recruiter/TestPage";
@@ -10,13 +10,17 @@ import CandidateUpload from "../pages/recruiter/CandidateUpload";
 import Assessment from "../pages/candidate/Assessment";
 import Chatbot from "../pages/candidate/Chatbot";
 import Completed from "../pages/candidate/Completed";
+import AllTests from "../pages/candidate/AllTests";
 import { withAuthGaurd } from "../components/AuthGaurd";
 import FallbackPage from "@/pages/FallbackPage";
 import CandidateRegister from "@/pages/candidate/Register";
 import RecruiterRegister from "@/pages/recruiter/Register";
 import RegisterSelect from "@/pages/Register";
 import { RecruiterLayout } from "@/components/layouts/RecruiterLayout";
+
 import Tests from "@/pages/recruiter/Tests";
+import CandidatesLayout from "@/components/layouts/CandidateLayout";
+import Home from "@/pages/candidate/Home";
 
 
 export const router = createBrowserRouter([
@@ -72,8 +76,18 @@ export const router = createBrowserRouter([
         ]
     },
     {
-        path: "/candidate/tests",
-        Component: withAuthGaurd(Assessment),
+        path: "/candidate",
+        Component: withAuthGaurd(CandidatesLayout),
+        children: [
+            {
+                path: "",
+                Component: Home
+            },
+            {
+                path: "all-tests",
+                Component: AllTests
+            }
+        ]
     },
     {
         path: "/candidate/assessment/:id",
