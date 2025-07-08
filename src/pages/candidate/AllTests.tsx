@@ -21,9 +21,7 @@ interface CompletedTest {
   durationTaken: string;
   score: number;
   totalScore: number;
-  grade?: string;
-  status: "completed" | "graded" | "pending";
-  passed: boolean;
+  status: "completed" | "pending";
 }
 
 interface CompletedTestCardProps {
@@ -34,25 +32,12 @@ function CompletedTestCard({ test }: CompletedTestCardProps) {
   const getStatusBadge = () => {
     switch (test.status) {
       case "completed":
-        return test.passed ? (
-          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-            🟢 Passed
-          </Badge>
-        ) : (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-            🔴 Failed
+        return (
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            Completed
           </Badge>
         );
-      case "graded":
-        return test.passed ? (
-          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-            🟢 Passed
-          </Badge>
-        ) : (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-            🔴 Failed
-          </Badge>
-        );
+
       case "pending":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
@@ -65,14 +50,10 @@ function CompletedTestCard({ test }: CompletedTestCardProps) {
   };
 
   const getScoreDisplay = () => {
-    if (test.grade) {
-      return `Grade: ${test.grade}`;
+    if (test.status === "pending") {
+      return "Pending";
     }
     return `${test.score} / ${test.totalScore}`;
-  };
-
-  const getProgressPercentage = () => {
-    return Math.round((test.score / test.totalScore) * 100);
   };
 
   return (
@@ -102,24 +83,6 @@ function CompletedTestCard({ test }: CompletedTestCardProps) {
                 <span className="font-medium">Score: {getScoreDisplay()}</span>
               </div>
             </div>
-
-            {/* Progress bar for numeric scores */}
-            {!test.grade && (
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Score</span>
-                  <span>{getProgressPercentage()}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      test.passed ? "bg-green-500" : "bg-red-500"
-                    }`}
-                    style={{ width: `${getProgressPercentage()}%` }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="flex flex-col items-end gap-2 ml-4">
@@ -181,9 +144,7 @@ export default function AllTests() {
           durationTaken: "58 minutes",
           score: 74,
           totalScore: 100,
-          grade: "B",
-          status: "graded",
-          passed: true,
+          status: "completed",
         },
         {
           id: "2",
@@ -194,7 +155,6 @@ export default function AllTests() {
           score: 88,
           totalScore: 100,
           status: "completed",
-          passed: true,
         },
         {
           id: "3",
@@ -205,7 +165,6 @@ export default function AllTests() {
           score: 45,
           totalScore: 100,
           status: "completed",
-          passed: false,
         },
         {
           id: "4",
@@ -216,7 +175,6 @@ export default function AllTests() {
           score: 0,
           totalScore: 100,
           status: "pending",
-          passed: false,
         },
       ];
 
@@ -228,7 +186,6 @@ export default function AllTests() {
   }, []);
 
   const completedCount = completedTests.length;
-  const passedCount = completedTests.filter((test) => test.passed).length;
 
   if (loading) {
     return (
@@ -268,11 +225,6 @@ export default function AllTests() {
               <h1 className="text-3xl font-bold">Past Tests</h1>
               <p className="text-muted-foreground mt-1">
                 Here are the tests you've completed or attempted.
-                {completedCount > 0 && (
-                  <span className="ml-2 font-medium">
-                    Total completed: {completedCount} | Passed: {passedCount}
-                  </span>
-                )}
               </p>
             </div>
           </div>
@@ -290,34 +242,6 @@ export default function AllTests() {
                 <CardContent>
                   <div className="text-2xl font-bold">{completedCount}</div>
                   <p className="text-xs text-muted-foreground">assessments</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Passed</CardTitle>
-                  <Trophy className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {passedCount}
-                  </div>
-                  <p className="text-xs text-muted-foreground">tests passed</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Success Rate
-                  </CardTitle>
-                  <Star className="h-4 w-4 text-yellow-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {Math.round((passedCount / completedCount) * 100)}%
-                  </div>
-                  <p className="text-xs text-muted-foreground">success rate</p>
                 </CardContent>
               </Card>
             </div>

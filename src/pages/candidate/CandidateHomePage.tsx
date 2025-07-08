@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AssignedTestCard } from "./components/AssignedTestCard";
 import { EmptyState } from "./components/EmptyState";
 import { motion } from "motion/react";
-import { User, Calendar, CheckCircle2 } from "lucide-react";
+import { User } from "lucide-react";
 
 interface Test {
   id: string;
@@ -17,10 +16,6 @@ interface Test {
 export default function CandidateHomePage() {
   const [tests, setTests] = useState<Test[]>([]);
   const [candidateName] = useState("Vedant");
-  const [stats, setStats] = useState({
-    totalAssigned: 0,
-    totalCompleted: 0,
-  });
 
   // Mock data - replace with actual API call
   useEffect(() => {
@@ -52,10 +47,6 @@ export default function CandidateHomePage() {
     ];
 
     setTests(mockTests);
-    setStats({
-      totalAssigned: mockTests.length,
-      totalCompleted: mockTests.filter((t) => t.status === "completed").length,
-    });
   }, []);
 
   const getCountdownText = (scheduledDate: Date): string | undefined => {
@@ -113,35 +104,6 @@ export default function CandidateHomePage() {
                 Here are the upcoming assessments you're assigned to.
               </p>
             </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Assigned
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalAssigned}</div>
-                <p className="text-xs text-muted-foreground">assessments</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Completed
-                </CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCompleted}</div>
-                <p className="text-xs text-muted-foreground">assessments</p>
-              </CardContent>
-            </Card>
           </div>
         </motion.div>
 
