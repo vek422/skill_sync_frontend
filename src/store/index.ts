@@ -2,12 +2,21 @@ import { configureStore } from "@reduxjs/toolkit";
 import { type TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
-import { rootReducer } from "./reducers";
+import { combineReducers } from "@reduxjs/toolkit";
+import { authReducer } from "./slices/authSlice";
+import { apiSlice } from "./apiSlice";
+import { setAuthTokenGetter } from "../api";
+
+// Create the combined reducer including API slice
+const rootReducer = combineReducers({
+    auth: authReducer,
+    [apiSlice.reducerPath]: apiSlice.reducer
+});
 
 const persistConfig = {
-    storage: storage,
+    storage,
     key: "root",
-    // whitelist: ["auth"]
+    whitelist: ["auth"]
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -19,10 +28,13 @@ export const store = configureStore({
             serializableCheck: {
                 ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"]
             }
-        })
+        }).concat(apiSlice.middleware)
 });
 
 export const persistor = persistStore(store);
+
+// Set up the auth token getter after store is created
+setAuthTokenGetter(() => store.getState().auth.token);
 
 
 

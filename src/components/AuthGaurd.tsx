@@ -1,4 +1,4 @@
-import { useAppSelector } from "@/store/store";
+import { useAppSelector } from "@/store";
 import { Navigate } from "react-router-dom";
 export const withAuthGaurd = (Component: React.ComponentType) => {
   return () => {

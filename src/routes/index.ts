@@ -8,8 +8,6 @@ import TestPage from "../pages/recruiter/TestPage";
 import Report from "../pages/recruiter/Report";
 import CandidateUpload from "../pages/recruiter/CandidateUpload";
 import Assessment from "../pages/candidate/Assessment";
-import Chatbot from "../pages/candidate/Chatbot";
-import Completed from "../pages/candidate/Completed";
 import AllTests from "../pages/candidate/AllTests";
 import { withAuthGaurd } from "../components/AuthGaurd";
 import FallbackPage from "@/pages/FallbackPage";
@@ -93,14 +91,14 @@ export const router = createBrowserRouter([
         path: "/candidate/assessment/:id",
         Component: withAuthGaurd(Assessment),
     },
-    {
-        path: "/candidate/test/:id",
-        Component: withAuthGaurd(Chatbot),
-    },
-    {
-        path: "/candidate/completed",
-        Component: withAuthGaurd(Completed),
-    },
+    // {
+    //     path: "/candidate/test/:id",
+    //     Component: withAuthGaurd(Chatbot),
+    // },
+    // {
+    //     path: "/candidate/completed",
+    //     Component: withAuthGaurd(Completed),
+    // },
     {
         path: "*",
         Component: FallbackPage,

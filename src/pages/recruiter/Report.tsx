@@ -311,7 +311,7 @@ export default function Report() {
       </Card>
 
       {/* Score vs Time Scatter Plot */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Score vs Time Analysis</CardTitle>
           <CardDescription>
@@ -355,7 +355,7 @@ export default function Report() {
             </ScatterChart>
           </ResponsiveContainer>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }
