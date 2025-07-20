@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -39,9 +40,21 @@ interface TestsDataTableProps {
 }
 
 export function TestsDataTable({ data, columns }: TestsDataTableProps) {
+  const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+
+  // Handle row click navigation
+  const handleRowClick = (testId: string, event: React.MouseEvent) => {
+    // Prevent navigation if clicking on action buttons
+    const target = event.target as HTMLElement;
+    const isActionButton = target.closest('button') || target.closest('a');
+    
+    if (!isActionButton) {
+      navigate(`/recruiter/test/${testId}`);
+    }
+  };
 
   // Status filter options
   const statusOptions: { value: FilterStatus; label: string }[] = [
@@ -176,7 +189,8 @@ export function TestsDataTable({ data, columns }: TestsDataTableProps) {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className="hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="hover:bg-muted/80 cursor-pointer transition-all duration-200 hover:shadow-sm"
+                    onClick={(event) => handleRowClick(row.original.test_id, event)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

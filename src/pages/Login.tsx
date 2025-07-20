@@ -1,15 +1,31 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { LoginForm } from "../components/LoginForm";
 import { Card } from "@/components/ui/card";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useLoginMutation } from "@/api/authApi";
 
-export default function () {
-  const [login, { isLoading, isError, isSuccess }] = useLoginMutation();
-  // Simulate login logic
-  const handleLogin = (data: { email: string; password: string }) => {
-    login({ email: data.email, password: data.password });
+export default function LoginPage() {
+  const [login, { isLoading }] = useLoginMutation();
+  const navigate = useNavigate(); 
+  const handleLogin = async (data: { email: string; password: string }) => {
+    const result = await login({ email: data.email, password: data.password });
+
+    if ("data" in result && result.data) {
+      console.log("Login result:", result.data);
+      
+      // Store the token for authenticated requests
+      localStorage.setItem('token', result.data.token);
+
+      if (result.data.role === "candidate") {
+        navigate("/candidate/dashboard"); 
+      } else if (result.data.role === "recruiter") {
+        navigate("/recruiter/dashboard");
+      }
+    } else {
+      console.log("Login error:", result);
+    }
   };
+
   return (
     <div className="flex w-screen h-screen items-center justify-center bg-background">
       <div className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-2 bg-transparent backdrop-blur-md ">

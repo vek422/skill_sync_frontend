@@ -24,8 +24,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
-import { Link } from "react-router-dom";
+import { DropdownMenuItem } from "./ui/dropdown-menu";
+import { Link, useNavigate } from "react-router-dom";
+import { useLogoutMutation, useProfileQuery } from "@/api/authApi";
 const navItems = [
   {
     label: "Dashboard",
@@ -55,6 +56,35 @@ const navItems = [
 ];
 
 export function AppSidebar() {
+
+  const navigate = useNavigate();
+  
+  // Fetch user profile - this will automatically fetch when component mounts
+  const { data: profile, isLoading: profileLoading, error: profileError } = useProfileQuery();
+  console.log("Profile data:", profile);
+  const [logoutMutation, { isLoading: logoutLoading }] = useLogoutMutation();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation().unwrap();
+    } catch (error) {
+      console.log("Logout API failed (this is OK):", error);
+    } finally {
+      // Always clear tokens and redirect, regardless of API success/failure
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      navigate("/login");
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
   return (
     <Sidebar>
       <SidebarHeader>
@@ -83,16 +113,28 @@ export function AppSidebar() {
               <AvatarImage src="https://github.com/shadcn.png"></AvatarImage>
               <AvatarFallback>VK</AvatarFallback>
             </Avatar>
-            <div className="">
-              <p className="text-sm text-left">Vedant Kotkar</p>
-              <p className="text-sm">vedantkotkar111@gmail.com</p>
+             <div>
+              <p className="text-sm text-left">
+                {profileLoading ? "Loading..." : profile?.name || "Unknown User"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {profileLoading ? "..." : profile?.email || "No email"}
+              </p>
+              <p className="text-sm text-left">
+                {profileLoading ? "..." : profile?.role || "No role"}
+              </p>
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48">
             <DropdownMenuItem className="w-full">
-              <Button variant={"destructive"} className="w-full">
+              <Button 
+                variant="destructive" 
+                className="w-full"
+                onClick={handleLogout}
+                disabled={logoutLoading}
+              >
                 <LogOut />
-                Logout
+                {logoutLoading ? "Logging out..." : "Logout"}
               </Button>
             </DropdownMenuItem>
           </DropdownMenuContent>

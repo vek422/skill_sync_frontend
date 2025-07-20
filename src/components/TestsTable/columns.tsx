@@ -99,12 +99,9 @@ export const createColumns = ({
       );
     },
     cell: ({ row }) => (
-      <Link
-        to={`/recruiter/test/edit/${row.getValue("test_id")}`}
-        className="hover:text-primary transition-colors"
-      >
+      <div className="font-medium hover:text-primary transition-colors">
         {row.getValue("test_name")}
-      </Link>
+      </div>
     ),
   },
   {
@@ -219,7 +216,10 @@ export const createColumns = ({
       const test = row.original;
       return (
         <div className="flex items-center gap-1">
-          <Link to={`/recruiter/test/edit/${test.test_id}`}>
+          <Link 
+            to={`/recruiter/test/edit/${test.test_id}`}
+            onClick={(e) => e.stopPropagation()} // Prevent row click when clicking edit
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -230,7 +230,10 @@ export const createColumns = ({
             </Button>
           </Link>
 
-          <Link to={`/recruiter/test/report/${test.test_id}`}>
+          <Link 
+            to={`/recruiter/test/${test.test_id}/report`}
+            onClick={(e) => e.stopPropagation()} // Prevent row click when clicking report
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -245,7 +248,10 @@ export const createColumns = ({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => onDuplicate(test.test_id)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent row click when clicking duplicate
+              onDuplicate(test.test_id);
+            }}
             title="Duplicate Test"
           >
             <Copy className="h-4 w-4" />
@@ -255,7 +261,10 @@ export const createColumns = ({
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={() => onDelete(test.test_id)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent row click when clicking delete
+              onDelete(test.test_id);
+            }}
             title="Delete Test"
           >
             <Trash2 className="h-4 w-4" />

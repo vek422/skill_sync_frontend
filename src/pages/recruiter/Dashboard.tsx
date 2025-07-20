@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import TestDistributionChart from "@/components/TestDistributionChart";
-import { testData, type Test } from "@/components/TestTable/columns";
+import { useGetRecruiterDashboardSummaryQuery } from "@/api/candidateApi";
 import {
   CalendarDays,
   Users,
@@ -15,70 +15,29 @@ import {
 } from "lucide-react";
 
 export default function Dashboard() {
-  // Calculate KPIs from test data
-  const scheduledTests = testData.filter(
-    (test) => test.test_status === "scheduled"
-  ).length;
-  const totalCandidates = testData.reduce(
-    (sum, test) => sum + test.total_candidate,
-    0
-  );
-  const completedTests = testData.filter(
-    (test) => test.test_status === "completed"
-  ).length;
-  const ongoingTests = testData.filter(
-    (test) => test.test_status === "ongoing"
-  ).length;
+  // Fetch real dashboard data from API
+  const { data, isLoading, error } = useGetRecruiterDashboardSummaryQuery();
 
-  // Prepare chart data
-  const chartData = [
-    { type: "scheduled", value: scheduledTests },
-    { type: "ongoing", value: ongoingTests },
-    { type: "completed", value: completedTests },
-    {
-      type: "draft",
-      value: testData.filter((test) => test.test_status === "draft").length,
-    },
-  ].filter((item) => item.value > 0); // Only show categories with data
+  // Show loading and error states
+  if (isLoading) {
+    return <div className="p-6">Loading dashboard...</div>;
+  }
+  if (error || !data) {
+    return (
+      <div className="p-6 text-red-600">Failed to load dashboard data.</div>
+    );
+  }
 
-  // Get recent tests (last 5)
-  const recentTests = testData
-    .sort(
-      (a, b) =>
-        new Date(b.test_created_at).getTime() -
-        new Date(a.test_created_at).getTime()
-    )
-    .slice(0, 5);
-
-  const getStatusBadgeProps = (status: Test["test_status"]) => {
-    switch (status) {
-      case "draft":
-        return {
-          variant: "outline" as const,
-          className: "border-gray-300 text-gray-600 bg-gray-50",
-        };
-      case "scheduled":
-        return {
-          variant: "outline" as const,
-          className: "border-blue-300 text-blue-700 bg-blue-50",
-        };
-      case "ongoing":
-        return {
-          variant: "outline" as const,
-          className: "border-yellow-300 text-yellow-700 bg-yellow-50",
-        };
-      case "completed":
-        return {
-          variant: "outline" as const,
-          className: "border-green-300 text-green-700 bg-green-50",
-        };
-      default:
-        return {
-          variant: "outline" as const,
-          className: "",
-        };
-    }
-  };
+  // Destructure API data
+  const scheduledTests = data.scheduled_tests;
+  const totalCandidates = data.total_candidates;
+  const completedTests = data.completed_tests;
+  const chartData = data.test_distribution.map((item) => ({
+    type: item.label.toLowerCase(),
+    value: item.count,
+  }));
+  const recentTests = data.recent_tests;
+  const quickStats = data.quick_stats;
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -171,18 +130,31 @@ export default function Dashboard() {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium">{test.test_name}</h3>
-                          <Badge {...getStatusBadgeProps(test.test_status)}>
-                            {test.test_status}
+                          <h3 className="font-medium">{test.name}</h3>
+                          <Badge
+                            variant={test.status}
+                            className={`${
+                              test.status === "draft"
+                                ? "border-gray-300 text-gray-600 bg-gray-50"
+                                : test.status === "scheduled"
+                                ? "border-blue-300 text-blue-700 bg-blue-50"
+                                : test.status === "ongoing"
+                                ? "border-yellow-300 text-yellow-700 bg-yellow-50"
+                                : test.status === "completed"
+                                ? "border-green-300 text-green-700 bg-green-50"
+                                : ""
+                            }`}
+                          >
+                            {test.status}
                           </Badge>
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {test.test_id} • {test.total_candidate} candidates •{" "}
-                          {test.test_duration}min
+                          {test.test_id} • {test.candidate_count} candidates •{" "}
+                          {test.duration_minutes}min
                         </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {new Date(test.test_created_at).toLocaleDateString()}
+                        {test.date}
                       </div>
                     </div>
                   ))}
@@ -238,17 +210,16 @@ export default function Dashboard() {
                 <span className="text-sm text-muted-foreground">
                   Active Tests
                 </span>
-                <span className="font-medium">{ongoingTests}</span>
+                <span className="font-medium">
+                  {data.quick_stats.active_tests}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
                   Draft Tests
                 </span>
                 <span className="font-medium">
-                  {
-                    testData.filter((test) => test.test_status === "draft")
-                      .length
-                  }
+                  {data.quick_stats.draft_tests}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -256,22 +227,16 @@ export default function Dashboard() {
                   Avg. Duration
                 </span>
                 <span className="font-medium">
-                  {testData.length > 0
-                    ? Math.round(
-                        testData.reduce(
-                          (sum, test) => sum + test.test_duration,
-                          0
-                        ) / testData.length
-                      )
-                    : 0}
-                  min
+                  {data.quick_stats.avg_duration_minutes} min
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">
                   Total Tests
                 </span>
-                <span className="font-medium">{testData.length}</span>
+                <span className="font-medium">
+                  {data.quick_stats.total_tests}
+                </span>
               </div>
             </CardContent>
           </Card>
