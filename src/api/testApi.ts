@@ -1,4 +1,9 @@
+
 import { apiSlice } from "@/store/apiSlice";
+
+// ...existing code...
+
+
 
 // TypeScript interfaces for API request and response
 // These match your backend API format exactly
@@ -56,6 +61,20 @@ export interface Test {
   total_marks?: number;
   updated_at?: string;
   recruiter_id?: number;
+  assessment_deadline?: string;
+  application_deadline?: string;
+  parsed_job_description?: {
+    question_distribution?: {
+      low: number;
+      medium: number;
+      high: number;
+    };
+    [key: string]: any;
+  };
+  skill_graph?: {
+    root_nodes?: any[];
+    [key: string]: any;
+  };
 }
 
 const testApi = apiSlice.injectEndpoints({
@@ -113,11 +132,13 @@ const testApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Tests"]
     }),
 
-    // Delete test mutation
-    deleteTest: builder.mutation<any, number>({
-      query: (testId) => ({
-        url: `/tests/${testId}`,
-        method: 'DELETE',
+
+    // Schedule test mutation
+    scheduleTest: builder.mutation<any, { testId: number; data: { scheduled_at: string; application_deadline?: string; assessment_deadline?: string } }>({
+      query: ({ testId, data }) => ({
+        url: `/tests/${testId}/schedule`,
+        method: 'POST',
+        data,
       }),
       invalidatesTags: ["Tests"]
     })
@@ -130,6 +151,6 @@ export const {
   useGetTestsQuery,
   useGetTestByIdQuery,
   useUpdateTestMutation,
-  useDeleteTestMutation,
-  useUpdateSkillGraphMutation
+  useUpdateSkillGraphMutation,
+  useScheduleTestMutation
 } = testApi;

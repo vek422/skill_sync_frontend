@@ -95,14 +95,16 @@ const renderActiveShape = (props: any) => {
 
 const getColorForType = (type: string): string => {
   switch (type) {
-    case "ongoing":
-      return "#6366f1"; // Indigo-500 - works in both themes
-    case "completed":
-      return "#10b981"; // Emerald-500 - works in both themes
     case "scheduled":
-      return "#f59e0b"; // Amber-500 - works in both themes
+      return "#2563eb"; // Blue-600
+    case "draft":
+      return "#f59e0b"; // Orange-500
+    case "live":
+      return "#a21caf"; // Purple-700
+    case "ended":
+      return "#22c55e"; // Green-500
     default:
-      return "#8b5cf6"; // Violet-500 - works in both themes
+      return "#8b5cf6"; // Violet-500
   }
 };
 

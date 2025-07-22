@@ -14,34 +14,23 @@ import { Link } from "react-router-dom";
 import { type Test } from "@/components/TestTable/columns";
 import { cn } from "@/lib/utils";
 
-// Get status badge properties
-const getStatusBadgeProps = (status: Test["test_status"]) => {
+// Get status badge properties for all possible statuses
+const getStatusBadgeProps = (status: string) => {
   switch (status) {
     case "draft":
-      return {
-        variant: "outline" as const,
-        className: "border-gray-300 text-gray-600 bg-gray-50",
-      };
+      return { variant: "outline" as const, className: "border-gray-300 text-gray-600 bg-gray-50" };
     case "scheduled":
-      return {
-        variant: "outline" as const,
-        className: "border-blue-300 text-blue-700 bg-blue-50",
-      };
+      return { variant: "outline" as const, className: "border-blue-300 text-blue-700 bg-blue-50" };
     case "ongoing":
-      return {
-        variant: "outline" as const,
-        className: "border-yellow-300 text-yellow-700 bg-yellow-50",
-      };
+      return { variant: "outline" as const, className: "border-yellow-300 text-yellow-700 bg-yellow-50" };
     case "completed":
-      return {
-        variant: "outline" as const,
-        className: "border-green-300 text-green-700 bg-green-50",
-      };
+      return { variant: "outline" as const, className: "border-green-300 text-green-700 bg-green-50" };
+    case "ended":
+      return { variant: "outline" as const, className: "border-red-300 text-red-700 bg-red-50" };
+    case "published":
+      return { variant: "outline" as const, className: "border-purple-300 text-purple-700 bg-purple-50" };
     default:
-      return {
-        variant: "outline" as const,
-        className: "",
-      };
+      return { variant: "outline" as const, className: "border-gray-300 text-gray-600 bg-gray-50" };
   }
 };
 
@@ -125,7 +114,7 @@ export const createColumns = ({
       );
     },
     cell: ({ row }) => {
-      const status = row.getValue("test_status") as Test["test_status"];
+      const status = row.getValue("test_status") as string;
       const { variant, className } = getStatusBadgeProps(status);
       return (
         <Badge variant={variant} className={cn(className)}>

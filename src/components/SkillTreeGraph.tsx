@@ -18,9 +18,9 @@ export interface SkillTreeGraphProps {
 const containerStyles: React.CSSProperties = {
   width: "100%",
   height: "500px",
-  background: "#f9fafb",
+  background: "var(--background, #f9fafb)",
   borderRadius: 8,
-  border: "1px solid #e5e7eb",
+  border: "1px solid var(--border, #e5e7eb)",
   marginTop: 16,
 };
 
@@ -54,12 +54,12 @@ const SkillTreeGraph: React.FC<SkillTreeGraphProps> = ({ root_nodes }) => {
           <g fontFamily="'Inter', 'Segoe UI', Arial, sans-serif">
             <circle
               r={14}
-              fill={nodeDatum.__rd3t.depth === 0 ? '#334155' : '#0ea5e9'}
-              stroke="#64748b"
+              fill={nodeDatum.__rd3t.depth === 0 ? 'var(--color-primary, #334155)' : 'var(--color-accent, #0ea5e9)'}
+              stroke="var(--border, #64748b)"
               strokeWidth={nodeDatum.__rd3t.depth === 0 ? 4 : 2}
             />
             <text
-              fill="#0f172a"
+              fill="var(--foreground, #0f172a)"
               fontWeight={nodeDatum.__rd3t.depth === 0 ? 700 : 600}
               fontSize={nodeDatum.__rd3t.depth === 0 ? 18 : 15}
               x={0}
@@ -70,7 +70,7 @@ const SkillTreeGraph: React.FC<SkillTreeGraphProps> = ({ root_nodes }) => {
               {nodeDatum.name}
             </text>
             {nodeDatum.attributes && nodeDatum.attributes.priority && (
-              <text x={0} y={-6} fontSize={12} fill="#64748b" textAnchor="middle" style={{ pointerEvents: 'none' }}>
+              <text x={0} y={-6} fontSize={12} fill="var(--muted-foreground, #64748b)" textAnchor="middle" style={{ pointerEvents: 'none' }}>
                 priority: {nodeDatum.attributes.priority}
               </text>
             )}
@@ -80,25 +80,8 @@ const SkillTreeGraph: React.FC<SkillTreeGraphProps> = ({ root_nodes }) => {
       />
       <style>{`
         .tree-link {
-          stroke: #cbd5e1;
+          stroke: var(--border, #cbd5e1);
           stroke-width: 2.5px;
-        }
-        .bg-background {
-          background: var(--background, #f9fafb);
-        }
-        .border-border {
-          border-color: var(--border, #e5e7eb);
-        }
-        @media (prefers-color-scheme: dark) {
-          .bg-background {
-            background: #1e293b;
-          }
-          .border-border {
-            border-color: #334155;
-          }
-          .tree-link {
-            stroke: #475569;
-          }
         }
       `}</style>
     </div>

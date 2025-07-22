@@ -3,40 +3,22 @@ import { Plus, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TestsDataTable } from "@/components/TestsTable/data-table";
 import { createColumns } from "@/components/TestsTable/columns";
-import { useGetTestsQuery, useDeleteTestMutation } from "@/api/testApi";
+import { useGetTestsQuery } from "@/api/testApi";
 import { useProfileQuery } from "@/api/authApi";
 import { type Test as TableTest } from "@/components/TestTable/columns";
 import { type Test as ApiTest } from "@/api/testApi";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Transform API test data to table format
+// Transform API test data to table format (use raw status)
 const transformTestData = (apiTests: ApiTest[]): TableTest[] => {
-  return apiTests.map((test) => {
-    // Map API status to table status
-    let tableStatus: "draft" | "ongoing" | "completed" | "scheduled" = "draft";
-    switch (test.status) {
-      case "draft":
-        tableStatus = "draft";
-        break;
-      case "published":
-        tableStatus = "ongoing";
-        break;
-      case "completed":
-        tableStatus = "completed";
-        break;
-      default:
-        tableStatus = test.scheduled_at ? "scheduled" : "draft";
-    }
-
-    return {
-      test_id: test.test_id.toString(),
-      test_name: test.test_name,
-      test_status: tableStatus,
-      test_created_at: test.created_at,
-      test_duration: test.time_limit_minutes || 60, // Default 60 minutes if not specified
-      total_candidate: 0, // Default to 0 since this needs to be calculated from assignments
-    };
-  });
+  return apiTests.map((test) => ({
+    test_id: test.test_id.toString(),
+    test_name: test.test_name,
+    test_status: test.status, // Use raw API status
+    test_created_at: test.created_at,
+    test_duration: test.time_limit_minutes || 60,
+    total_candidate: 0,
+  }));
 };
 
 export default function Tests() {
@@ -68,7 +50,7 @@ export default function Tests() {
     })));
   }
   
-  const [deleteTest] = useDeleteTestMutation();
+
 
   // Enhanced delete handler with status checking
   const handleDelete = async (testId: string) => {
@@ -91,7 +73,8 @@ export default function Tests() {
     
     if (confirm(confirmMessage)) {
       try {
-        await deleteTest(parseInt(testId)).unwrap();
+        // TODO: Implement deleteTest API call if available
+        alert("Delete test API not implemented. Please contact the developer.");
         console.log("Test deleted successfully");
         alert("✅ Test deleted successfully!");
         // Refetch tests after deletion

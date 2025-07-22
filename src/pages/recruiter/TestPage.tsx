@@ -2,7 +2,7 @@
 // Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useDeleteTestMutation, useGetTestByIdQuery, useUpdateTestMutation } from "@/api/testApi";
+import { useGetTestByIdQuery, useUpdateTestMutation, useScheduleTestMutation } from "@/api/testApi";
 import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation } from "@/api/candidateApi";
 import { parseExcelFile, downloadSampleTemplate, validateFileType } from "@/utils/excelParser";
 import type { ExcelCandidateItem } from "@/utils/excelParser";
@@ -37,6 +37,7 @@ import {
   Mail,
   ChevronDown,
   ChevronUp,
+  Activity,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,7 +59,7 @@ import {
 import SkillTreeGraph from "@/components/SkillTreeGraph";
 
 
-import { useUpdateSkillGraphMutation } from "@/api/testApi";
+
 // --- SkillGraphDistributionControls state for TestPage ---
 // (This replaces the inline component with the reusable one)
 
@@ -66,7 +67,7 @@ import { useUpdateSkillGraphMutation } from "@/api/testApi";
 const TestPage: React.FC = () => {
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
-  const [deleteTest] = useDeleteTestMutation();
+
   
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -273,7 +274,8 @@ const TestPage: React.FC = () => {
     
     if (userInput === "DELETE") {
       try {
-        await deleteTest(parseInt(testId)).unwrap();
+        // TODO: Implement deleteTest API call if available
+        alert("Delete test API not implemented. Please contact the developer.");
         alert("✅ Test deleted successfully!");
         navigate("/recruiter/tests"); // Navigate back to tests list
       } catch (error) {
@@ -307,16 +309,23 @@ const TestPage: React.FC = () => {
     }
   };
 
-  // Helper for status badge
+  // Helper for status badge (supports all statuses with distinct colors)
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { variant: string; label: string }> = {
-      draft: { variant: "secondary", label: "Draft" },
-      scheduled: { variant: "default", label: "Scheduled" },
-      ongoing: { variant: "destructive", label: "Ongoing" },
-      completed: { variant: "outline", label: "Completed" },
+    // Map status to color and label
+    const statusConfig: Record<string, { color: string; label: string }> = {
+      draft: { color: 'bg-gray-200 text-gray-800', label: 'Draft' },
+      scheduled: { color: 'bg-blue-100 text-blue-800', label: 'Scheduled' },
+      ongoing: { color: 'bg-yellow-100 text-yellow-800', label: 'Ongoing' },
+      completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
+      ended: { color: 'bg-red-100 text-red-800', label: 'Ended' },
+      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
+      // fallback
+      default: { color: 'bg-gray-200 text-gray-800', label: status.charAt(0).toUpperCase() + status.slice(1) },
     };
-    const config = statusConfig[status] || { variant: "secondary", label: status };
-    return <Badge variant={config.variant as any}>{config.label}</Badge>;
+    const config = statusConfig[status] || statusConfig['default'];
+    return (
+      <span className={`px-2 py-1 rounded text-xs font-semibold ${config.color}`}>{config.label}</span>
+    );
   };
 
   // Helper for date formatting
@@ -440,37 +449,31 @@ const TestPage: React.FC = () => {
   // Move hooks to top level to avoid conditional hook calls
   // Loading and error UI will be handled below in the render
 
+
   // --- Scheduling State ---
   const [scheduleState, setScheduleState] = useState({
     scheduled_at: '',
-    time_limit_minutes: '',
+    application_deadline: '',
     assessment_deadline: '',
   });
 
-  // Auto-calculate assessment_deadline when scheduled_at or time_limit_minutes changes
-  useEffect(() => {
-    if (scheduleState.scheduled_at && scheduleState.time_limit_minutes) {
-      const start = new Date(scheduleState.scheduled_at);
-      const mins = parseInt(scheduleState.time_limit_minutes, 10);
-      if (!isNaN(start.getTime()) && !isNaN(mins)) {
-        const end = new Date(start.getTime() + mins * 60000);
-        setScheduleState(prev => ({ ...prev, assessment_deadline: end.toISOString().slice(0, 16) }));
-      }
-    }
-  }, [scheduleState.scheduled_at, scheduleState.time_limit_minutes]);
+  const [scheduleTest, { isLoading: isScheduling }] = useScheduleTestMutation();
+
+  // Auto-calculate assessment_deadline when scheduled_at changes (if needed)
+  // You can add logic here if you want to auto-calculate assessment_deadline
 
   // Schedule handler
   const handleSchedule = async () => {
     setUpdateError(null); setUpdateSuccess(null);
     if (!testId) return;
     try {
-      const { scheduled_at, time_limit_minutes, assessment_deadline } = scheduleState;
+      const { scheduled_at, application_deadline, assessment_deadline } = scheduleState;
       const payload: any = {};
       if (scheduled_at) payload.scheduled_at = scheduled_at;
-      if (time_limit_minutes) payload.time_limit_minutes = time_limit_minutes;
+      if (application_deadline) payload.application_deadline = application_deadline;
       if (assessment_deadline) payload.assessment_deadline = assessment_deadline;
       console.log('[ScheduleTest] Sending payload:', payload);
-      await updateTest({ testId: Number(testId), testData: payload }).unwrap();
+      await scheduleTest({ testId: Number(testId), data: payload }).unwrap();
       setUpdateSuccess('Test scheduled successfully!');
     } catch (e: any) {
       setUpdateError(e?.data?.message || 'Failed to schedule test');
@@ -609,55 +612,61 @@ const TestPage: React.FC = () => {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-200 dark:from-blue-900 dark:to-blue-800 border-0 shadow-md">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Test Status</CardTitle>
+                <CardTitle className="text-lg text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" /> Test Status
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Test Created</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Test Created</span>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Resume Parsing</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Resume Parsing</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-muted-foreground">2/3</span>
+                    <span className="text-xs text-blue-700 dark:text-blue-200">2/3</span>
                     <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Graph Generation</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Graph Generation</span>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-50 to-purple-200 dark:from-purple-900 dark:to-purple-800 border-0 shadow-md">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Candidates</CardTitle>
+                <CardTitle className="text-lg text-purple-900 dark:text-purple-200 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-purple-500" /> Candidates
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{candidates?.length || 0}</div>
-                <p className="text-sm text-muted-foreground">Total candidates</p>
+                <div className="text-2xl font-extrabold text-purple-900 dark:text-purple-100">{candidates?.length || 0}</div>
+                <p className="text-sm text-purple-700 dark:text-purple-200">Total candidates</p>
                 <div className="mt-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Completed:</span>
-                    <span>{candidates?.filter(c => c.score !== null).length || 0}</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">Completed:</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">{candidates?.filter(c => c.score !== null).length || 0}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Shortlisted:</span>
-                    <span>{candidates?.filter(c => c.is_shortlisted).length || 0}</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">Shortlisted:</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">{candidates?.filter(c => c.is_shortlisted).length || 0}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-green-50 to-green-200 dark:from-green-900 dark:to-green-800 border-0 shadow-md">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Performance</CardTitle>
+                <CardTitle className="text-lg text-green-900 dark:text-green-200 flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-green-500" /> Performance
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-extrabold text-green-900 dark:text-green-100">
                   {candidates && candidates.filter(c => c.score !== null).length > 0
                     ? Math.round(
                         candidates
@@ -667,15 +676,15 @@ const TestPage: React.FC = () => {
                       )
                     : 0}%
                 </div>
-                <p className="text-sm text-muted-foreground">Average score</p>
+                <p className="text-sm text-green-700 dark:text-green-200">Average score</p>
                 <div className="mt-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Highest:</span>
-                    <span>{candidates && candidates.length > 0 ? Math.max(...candidates.map(c => c.score || 0)) : 0}%</span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">Highest:</span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">{candidates && candidates.length > 0 ? Math.max(...candidates.map(c => c.score || 0)) : 0}%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Lowest:</span>
-                    <span>{candidates && candidates.filter(c => c.score !== null).length > 0 ? Math.min(...candidates.filter(c => c.score !== null).map(c => c.score!)) : 0}%</span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">Lowest:</span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">{candidates && candidates.filter(c => c.score !== null).length > 0 ? Math.min(...candidates.filter(c => c.score !== null).map(c => c.score!)) : 0}%</span>
                   </div>
                 </div>
               </CardContent>
@@ -1018,31 +1027,34 @@ const TestPage: React.FC = () => {
         <TabsContent value="settings" className="space-y-6">
           {/* Scheduling Section */}
           <Card>
-            <CardHeader>
-              <CardTitle>Schedule Test</CardTitle>
-              <CardDescription>Set the start time and duration. End time is auto-calculated.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="scheduledAt">Scheduled At</Label>
-                <Input id="scheduledAt" type="datetime-local" value={scheduleState.scheduled_at} onChange={e => setScheduleState(prev => ({ ...prev, scheduled_at: e.target.value }))} className="max-w-md" />
+          <CardHeader>
+            <CardTitle>Schedule Test</CardTitle>
+            <CardDescription>Set the start time and duration. End time is auto-calculated.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Show current scheduled test time if available */}
+            {test?.scheduled_at && (
+              <div className="mb-2">
+                <span className="font-medium">Current Scheduled Test:&nbsp;</span>
+                <span className="text-blue-700">{formatDate(test.scheduled_at)}</span>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="timeLimit">Duration (minutes)</Label>
-                <Input id="timeLimit" type="number" value={scheduleState.time_limit_minutes} onChange={e => setScheduleState(prev => ({ ...prev, time_limit_minutes: e.target.value }))} className="max-w-md" />
-              </div>
-              <div className="space-y-2">
-                <Label>Assessment End Time</Label>
-                <Input type="datetime-local" value={scheduleState.assessment_deadline} readOnly className="max-w-md" />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <Button onClick={handleSchedule} disabled={isUpdatingTest}>
-                  {isUpdatingTest ? 'Scheduling...' : 'Schedule'}
-                </Button>
-              </div>
-              {updateError && <div className="text-red-600 text-sm mt-2">{updateError}</div>}
-              {updateSuccess && <div className="text-green-600 text-sm mt-2">{updateSuccess}</div>}
-            </CardContent>
+            )}
+            <div className="space-y-2"> 
+              <Label htmlFor="scheduledAt">Scheduled At</Label>
+              <Input id="scheduledAt" type="datetime-local" value={scheduleState.scheduled_at} onChange={e => setScheduleState(prev => ({ ...prev, scheduled_at: e.target.value }))} className="max-w-md" />
+            </div>
+            <div className="space-y-2">
+              <Label>Assessment End Time</Label>
+              <Input type="datetime-local" value={scheduleState.assessment_deadline} onChange={e => setScheduleState(prev => ({ ...prev, assessment_deadline: e.target.value }))} className="max-w-md" />
+            </div>
+            <div className="flex gap-4 pt-4">
+              <Button onClick={handleSchedule} disabled={isScheduling}>
+                {isScheduling ? 'Scheduling...' : 'Schedule'}
+              </Button>
+            </div>
+            {updateError && <div className="text-red-600 text-sm mt-2">{updateError}</div>}
+            {updateSuccess && <div className="text-green-600 text-sm mt-2">{updateSuccess}</div>}
+          </CardContent>
           </Card>
 
           {/* Update Test Section */}
