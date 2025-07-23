@@ -1,7 +1,7 @@
 // Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGetTestByIdQuery, useUpdateTestMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
+import { useGetTestByIdQuery, useUpdateTestMutation, useUpdateSkillGraphMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
 import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation } from "@/api/candidateApi";
 import { parseExcelFile, downloadSampleTemplate, validateFileType } from "@/utils/excelParser";
 import type { ExcelCandidateItem } from "@/utils/excelParser";
@@ -120,6 +120,7 @@ const TestPage: React.FC = () => {
 
   // Unified test update state
   const [updateTest, { isLoading: isUpdatingTest }] = useUpdateTestMutation();
+  const [updateSkillGraph, { isLoading: isUpdatingSkillGraph }] = useUpdateSkillGraphMutation();
   const [editMode, setEditMode] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
@@ -127,6 +128,41 @@ const TestPage: React.FC = () => {
   const [formState, setFormState] = useState<any>(null);
   // For slider
   const [sliderValues, setSliderValues] = useState<number[]>([33, 66]);
+  // Skill graph update feedback
+  const [skillGraphError, setSkillGraphError] = useState<string | null>(null);
+  const [skillGraphSuccess, setSkillGraphSuccess] = useState<string | null>(null);
+  // Handler for Update Skill Graph button
+  const handleUpdateSkillGraph = async () => {
+    setSkillGraphError(null);
+    setSkillGraphSuccess(null);
+    if (!testId || !formState) return;
+    const total = Number(formState.total_questions);
+    const lowPercent = sliderValues[0];
+    const mediumPercent = sliderValues[1] - sliderValues[0];
+    const highPercent = 100 - sliderValues[1];
+    // Calculate counts
+    let low = Math.round((lowPercent / 100) * total);
+    let medium = Math.round((mediumPercent / 100) * total);
+    let high = total - low - medium;
+    // Correction if rounding causes mismatch
+    const sum = low + medium + high;
+    if (sum !== total) {
+      // Adjust high to fix rounding error
+      high += (total - sum);
+    }
+    try {
+      await updateSkillGraph({
+        test_id: Number(testId),
+        total_questions: total,
+        low,
+        medium,
+        high
+      }).unwrap();
+      setSkillGraphSuccess('Skill graph updated successfully!');
+    } catch (e: any) {
+      setSkillGraphError(e?.data?.message || 'Failed to update skill graph');
+    }
+  };
 
   // Initialize form state from test data
   useEffect(() => {
@@ -1100,8 +1136,10 @@ const TestPage: React.FC = () => {
                       setTotalQuestions={val => handleFieldChange('total_questions', val)}
                       sliderValues={sliderValues}
                       setSliderValues={setSliderValues}
-                      onUpdate={undefined}
-                      hideUpdateButton
+                      onUpdate={handleUpdateSkillGraph}
+                      isUpdating={isUpdatingSkillGraph}
+                      error={skillGraphError}
+                      success={skillGraphSuccess}
                     />
                   </div>
                   <div className="space-y-2">

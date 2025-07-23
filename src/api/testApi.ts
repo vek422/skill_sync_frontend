@@ -153,12 +153,12 @@ const testApi = apiSlice.injectEndpoints({
     // Update skill graph distribution
     updateSkillGraph: builder.mutation<any, { test_id: number; total_questions: number; high: number; medium: number; low: number }>({
       query: ({ test_id, total_questions, high, medium, low }) => {
-        const body = { total_questions, high, medium, low };
-        console.log('[updateSkillGraph] Sending body:', body);
+        const data = { total_questions, high, medium, low };
+        console.log('[updateSkillGraph] Sending data:', data);
         return {
           url: `/tests/${test_id}/update-skill-graph`,
           method: 'PUT',
-          body
+          data
         };
       },
       invalidatesTags: ["Tests"]
