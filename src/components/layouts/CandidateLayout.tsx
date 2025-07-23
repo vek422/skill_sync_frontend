@@ -52,16 +52,12 @@ export default function CandidatesLayout() {
           <NavigationMenuList>
             {navigationItems.map((item) => (
               <NavigationMenuItem key={item.path}>
-                <Link to={item.path}>
-                  <NavigationMenuLink
-                    className={cn(
-                      "cursor-pointer px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      isActive(item.path) && "bg-accent text-accent-foreground"
-                    )}
-                  >
-                    {item.label}
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink asChild className={cn(
+                  "cursor-pointer px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive(item.path) && "bg-accent text-accent-foreground"
+                )}>
+                  <Link to={item.path}>{item.label}</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             ))}
           </NavigationMenuList>

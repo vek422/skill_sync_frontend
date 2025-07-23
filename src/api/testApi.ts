@@ -1,5 +1,21 @@
+// Bulk add shortlisted candidates to assessments
+export interface BulkAssessmentResponse {
+  test_id: number;
+  shortlisted_count: number;
+  message: string;
+}
 
 import { apiSlice } from "@/store/apiSlice";
+
+export interface AddCandidateToAssessmentRequest {
+  test_id: number;
+  candidate_id: number;
+}
+
+export interface AddCandidateToAssessmentResponse {
+  success: boolean;
+  message: string;
+}
 
 // ...existing code...
 
@@ -79,6 +95,22 @@ export interface Test {
 
 const testApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // Bulk add shortlisted candidates to assessments
+    bulkAddShortlistedToAssessments: builder.mutation<BulkAssessmentResponse, number>({
+      query: (testId) => ({
+        url: `/tests/${testId}/shortlisted/assessments`,
+        method: 'POST',
+      }),
+      invalidatesTags: ["Candidates"],
+    }),
+    // Delete test by ID
+    deleteTest: builder.mutation<{ success: boolean }, number>({
+      query: (testId) => ({
+        url: `/tests/${testId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ["Tests"]
+    }),
     // Create new test mutation
     createTest: builder.mutation<CreateTestResponse, CreateTestRequest>({
       query: (testData) => ({
@@ -142,6 +174,15 @@ const testApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Tests"]
     })
+    ,
+    // Add single candidate to assessment (shortlist)
+    addCandidateToAssessment: builder.mutation<AddCandidateToAssessmentResponse, AddCandidateToAssessmentRequest>({
+      query: ({ test_id, candidate_id }) => ({
+        url: `/tests/${test_id}/assessment/add-candidate?candidate_id=${candidate_id}`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Candidates"],
+    })
   })
 });
 
@@ -152,5 +193,8 @@ export const {
   useGetTestByIdQuery,
   useUpdateTestMutation,
   useUpdateSkillGraphMutation,
-  useScheduleTestMutation
+  useScheduleTestMutation,
+  useDeleteTestMutation,
+  useAddCandidateToAssessmentMutation,
+  useBulkAddShortlistedToAssessmentsMutation
 } = testApi;

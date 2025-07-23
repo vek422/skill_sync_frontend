@@ -3,18 +3,33 @@ import { Plus, Loader2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TestsDataTable } from "@/components/TestsTable/data-table";
 import { createColumns } from "@/components/TestsTable/columns";
-import { useGetTestsQuery } from "@/api/testApi";
+import { useGetTestsQuery, useDeleteTestMutation } from "@/api/testApi";
 import { useProfileQuery } from "@/api/authApi";
 import { type Test as TableTest } from "@/components/TestTable/columns";
 import { type Test as ApiTest } from "@/api/testApi";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Transform API test data to table format (use raw status)
+// Transform API test data to table format (map status to allowed values)
+const mapStatus = (status: string): TableTest["test_status"] => {
+  switch (status) {
+    case "draft":
+      return "draft";
+    case "scheduled":
+      return "scheduled";
+    case "ongoing":
+    case "published":
+      return "ongoing";
+    case "completed":
+      return "completed";
+    default:
+      return "draft";
+  }
+};
 const transformTestData = (apiTests: ApiTest[]): TableTest[] => {
   return apiTests.map((test) => ({
     test_id: test.test_id.toString(),
     test_name: test.test_name,
-    test_status: test.status, // Use raw API status
+    test_status: mapStatus(test.status),
     test_created_at: test.created_at,
     test_duration: test.time_limit_minutes || 60,
     total_candidate: 0,
@@ -52,6 +67,9 @@ export default function Tests() {
   
 
 
+  // Delete mutation hook
+  const [deleteTest] = useDeleteTestMutation();
+
   // Enhanced delete handler with status checking
   const handleDelete = async (testId: string) => {
     // Find the test to check its status
@@ -70,14 +88,10 @@ export default function Tests() {
 
     // Confirmation dialog for valid deletion
     const confirmMessage = `🗑️ Delete Test Confirmation\n\nAre you sure you want to delete "${testToDelete.test_name}"?\n\nThis action cannot be undone.`;
-    
     if (confirm(confirmMessage)) {
       try {
-        // TODO: Implement deleteTest API call if available
-        alert("Delete test API not implemented. Please contact the developer.");
-        console.log("Test deleted successfully");
+        await deleteTest(Number(testId)).unwrap();
         alert("✅ Test deleted successfully!");
-        // Refetch tests after deletion
         refetch();
       } catch (error) {
         console.error("Failed to delete test:", error);
@@ -98,8 +112,17 @@ export default function Tests() {
     onDuplicate: handleDuplicate,
   });
 
-  // Transform API data for table - now handling direct array
-  const tableData = testsData ? transformTestData(testsData) : [];
+  // Use raw API data for table, but only map required fields for columns
+  const tableData = Array.isArray(testsData)
+    ? testsData.map((test) => ({
+        test_id: test.test_id?.toString() ?? '',
+        test_name: test.test_name ?? '',
+        test_status: test.status ?? '',
+        test_created_at: test.created_at ?? '',
+        test_duration: test.time_limit_minutes ?? 0,
+        total_candidate: 0,
+      }))
+    : [];
   
   // Log the transformed data for debugging
   console.log("Raw API tests data:", testsData);

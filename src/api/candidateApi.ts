@@ -130,6 +130,14 @@ export interface ShortlistBulkResponse {
 
 const candidateApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    // Get all assessments/tests assigned to a candidate
+    getCandidateAssessments: builder.query<any, number>({
+      query: (candidateId) => ({
+        url: `/tests/candidates/${candidateId}/assessments`,
+        method: 'GET'
+      }),
+      providesTags: ["CandidateAssessments"]
+    }),
     // Bulk upload candidates
     bulkUploadCandidates: builder.mutation<BulkUploadResponse, { applications: BulkApplicationItem[] }>({
       query: ({ applications }) => ({
@@ -218,5 +226,6 @@ export const {
   useDeleteCandidateMutation,
   useCreateSingleCandidateMutation,
   useGetRecruiterDashboardSummaryQuery,
-  useShortlistBulkCandidatesMutation
+  useShortlistBulkCandidatesMutation,
+  useGetCandidateAssessmentsQuery
 } = candidateApi;

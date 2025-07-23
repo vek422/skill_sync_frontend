@@ -1,11 +1,32 @@
 import { Card } from "@/components/ui/card";
 import { RegistrationForm } from "../../components/RegistrationForm";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useRegisterMutation } from "@/api/authApi";
 import { ModeToggle } from "@/components/mode-toggle";
+import { useState } from "react";
 
 export default function CandidateRegister() {
-  const [register, { isLoading, isError, error }] = useRegisterMutation();
+  const [register, { isLoading }] = useRegisterMutation();
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleRegister = async (data) => {
+    setError(null);
+    try {
+      const result = await register(data).unwrap();
+      // Registration successful, redirect to candidate dashboard
+      navigate("/candidate/");
+    } catch (err) {
+      // Show backend error message (including validation details)
+      if (err?.data?.detail && Array.isArray(err.data.detail)) {
+        // Collect all error messages
+        const messages = err.data.detail.map((d) => d.msg).filter(Boolean);
+        setError(messages.join("\n"));
+      } else {
+        setError(err?.data?.message || "Registration failed");
+      }
+    }
+  };
 
   return (
     <div className="flex w-screen h-screen items-center justify-center bg-background">
@@ -15,8 +36,9 @@ export default function CandidateRegister() {
       </div>
       <Card>
         <RegistrationForm
-          onSubmit={register}
+          onSubmit={handleRegister}
           loading={isLoading}
+          error={error}
           title="Candidate Registration"
           role="candidate"
         />

@@ -1,9 +1,8 @@
-
 // Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useGetTestByIdQuery, useUpdateTestMutation, useScheduleTestMutation } from "@/api/testApi";
-import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation } from "@/api/candidateApi";
+import { useGetTestByIdQuery, useUpdateTestMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
+import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation } from "@/api/candidateApi";
 import { parseExcelFile, downloadSampleTemplate, validateFileType } from "@/utils/excelParser";
 import type { ExcelCandidateItem } from "@/utils/excelParser";
 import {
@@ -65,6 +64,24 @@ import SkillTreeGraph from "@/components/SkillTreeGraph";
 
 
 const TestPage: React.FC = () => {
+  // State for assessment creation feedback
+  const [assessmentResult, setAssessmentResult] = useState<{success: boolean, message: string} | null>(null);
+  const [bulkAddAssessments, { isLoading: isBulkAddingAssessments }] = useBulkAddShortlistedToAssessmentsMutation();
+  // Single candidate shortlist mutation
+  const [addCandidateToAssessment, { isLoading: isShortlistingSingle }] = useAddCandidateToAssessmentMutation();
+  const [singleShortlistResult, setSingleShortlistResult] = useState<{success: boolean, message: string} | null>(null);
+  // Handler for single candidate shortlisting
+  const handleShortlistSingle = async (candidate_id: number) => {
+    if (!testId || !candidate_id) return;
+    setSingleShortlistResult(null);
+    try {
+      const result = await addCandidateToAssessment({ test_id: Number(testId), candidate_id }).unwrap();
+      setSingleShortlistResult(result);
+      refetchCandidates();
+    } catch (err: any) {
+      setSingleShortlistResult({ success: false, message: err?.data?.message || "Shortlisting failed" });
+    }
+  };
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
 
@@ -163,63 +180,23 @@ const TestPage: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
-    setUpdateError(null); setUpdateSuccess(null);
-    if (!testId || !formState) return;
-    try {
-      // Only include fields that are not empty string or undefined/null
-      const {
-        test_name,
-        job_description,
-        auto_shortlist,
-        total_questions,
-        time_limit_minutes,
-        total_marks,
-        question_distribution,
-        resume_score_threshold,
-        max_shortlisted_candidates,
-      } = formState;
+  const [deleteTest] = useDeleteTestMutation();
+  // (Removed duplicate handleDeleteTest)
 
-      const payload: any = {
-        test_name,
-        job_description,
-        auto_shortlist,
-        total_questions,
-        time_limit_minutes,
-        total_marks,
-        question_distribution,
-      };
-      if (resume_score_threshold !== '' && resume_score_threshold !== undefined && resume_score_threshold !== null) payload.resume_score_threshold = resume_score_threshold;
-      if (max_shortlisted_candidates !== '' && max_shortlisted_candidates !== undefined && max_shortlisted_candidates !== null) payload.max_shortlisted_candidates = max_shortlisted_candidates;
-
-      // Remove any fields that are empty string
-      Object.keys(payload).forEach(key => {
-        if (payload[key] === '' || payload[key] === undefined || payload[key] === null) {
-          delete payload[key];
-        }
-      });
-
-      console.log('[UpdateTest] Sending payload:', payload);
-      await updateTest({ testId: Number(testId), testData: payload }).unwrap();
-      setUpdateSuccess('Test updated successfully!');
-      setEditMode(false);
-    } catch (e: any) {
-      setUpdateError(e?.data?.message || 'Failed to update test');
-    }
-  };
+  // ...existing code for updateTest and other handlers...
 
   // Normalize candidates from API to a consistent structure for the table
   const normalizedCandidates = React.useMemo(() => {
     if (!candidates) return [];
     return candidates.map((c: any, idx: number) => ({
-      name: c['candidate_name'] || c['name'] || '',
-      email: c['candidate_email'] || c['email'] || '',
+      application_id: c['application_id'],
+      name: c['candidate_name'] || '',
+      email: c['candidate_email'] || '',
       resume_link: c['resume_link'],
-      resume_score: c['resume_score'] ?? c['score'] ?? null,
+      resume_score: c['resume_score'] ?? null,
       is_shortlisted: c['is_shortlisted'],
-      testCompleted: c['test_completed'] ?? false,
-      inviteSent: c['invite_sent'] ?? false,
-      key: (c['candidate_email'] || c['email'] || '') + (c['resume_score'] ?? c['score'] ?? idx),
+      // ...other fields as needed...
+      key: (c['candidate_email'] || '') + (c['resume_score'] ?? idx),
     }));
   }, [candidates]);
 
@@ -300,12 +277,35 @@ const TestPage: React.FC = () => {
   const handleShortlistBulk = async () => {
     if (!testId) return;
     setShortlistResult(null);
+    setAssessmentResult(null);
     try {
       const result = await shortlistBulk({ test_id: Number(testId), min_score: minScore }).unwrap();
       setShortlistResult(result);
+      // Immediately call assessment creation API
+      try {
+        await axios.post(`/tests/${testId}/shortlisted/assessments`);
+        setAssessmentResult({ success: true, message: "Assessment records created for all shortlisted candidates." });
+      } catch (err2: any) {
+        setAssessmentResult({ success: false, message: err2?.response?.data?.message || "Assessment creation failed." });
+      }
       refetchCandidates();
     } catch (err: any) {
       setShortlistResult({ notified: 0, message: err?.data?.message || "Shortlisting failed", shortlisted: [] });
+      setAssessmentResult({ success: false, message: err?.data?.message || "Shortlisting failed" });
+    }
+  };
+
+  // Handler for deleting a candidate application
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
+  const handleDeleteCandidate = async (applicationId: number, candidateObj?: any) => {
+    console.log('Attempting to delete candidate application:', { applicationId, candidateObj });
+    if (!window.confirm("Are you sure you want to remove this candidate? This action cannot be undone.")) return;
+    try {
+      await deleteCandidate(applicationId).unwrap();
+      alert("Candidate application deleted successfully.");
+      refetchCandidates();
+    } catch (error: any) {
+      alert(error?.data?.message || "Failed to delete candidate application.");
     }
   };
 
@@ -830,14 +830,35 @@ const TestPage: React.FC = () => {
               <Button
                 variant="secondary"
                 className="ml-0 md:ml-4"
-                // No onClick yet, logic to be added later
-                disabled={normalizedCandidates.filter(c => c.is_shortlisted).length === 0}
+                onClick={async () => {
+                  setAssessmentResult(null);
+                  try {
+                    const res = await bulkAddAssessments(Number(testId)).unwrap();
+                    setAssessmentResult({ success: true, message: res.message });
+                  } catch (err: any) {
+                    setAssessmentResult({ success: false, message: err?.data?.message || "Assessment creation failed." });
+                  }
+                  refetchCandidates();
+                }}
+                disabled={isBulkAddingAssessments || normalizedCandidates.filter(c => c.is_shortlisted).length === 0}
               >
-                Send Invitation to {normalizedCandidates.filter(c => c.is_shortlisted).length} Candidate{normalizedCandidates.filter(c => c.is_shortlisted).length === 1 ? '' : 's'}
+                {isBulkAddingAssessments ? "Adding..." : "Add them to assessment list"}
               </Button>
               {shortlistResult && (
                 <div className="ml-0 md:ml-4 text-green-700 text-sm">
                   {shortlistResult.message}
+                </div>
+              )}
+              {/* Assessment creation feedback */}
+              {assessmentResult && (
+                <div className={`ml-0 md:ml-4 text-sm ${assessmentResult.success ? "text-green-700" : "text-red-700"}`}>
+                  {assessmentResult.message}
+                </div>
+              )}
+              {/* Single shortlist feedback (toast style) */}
+              {singleShortlistResult && (
+                <div className={`ml-0 md:ml-4 text-sm ${singleShortlistResult.success ? "text-green-700" : "text-red-700"}`}>
+                  {singleShortlistResult.message}
                 </div>
               )}
             </CardContent>
@@ -962,9 +983,9 @@ const TestPage: React.FC = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleShortlistSingle(candidate.application_id)} disabled={isShortlistingSingle}>
                                 <Mail className="h-4 w-4 mr-2" />
-                                Send Invite
+                                {isShortlistingSingle ? "Shortlisting..." : "Shortlist & Send Invite"}
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Download className="h-4 w-4 mr-2" />
@@ -974,9 +995,9 @@ const TestPage: React.FC = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Results
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteCandidate(candidate.application_id, candidate)} disabled={isDeletingCandidate}>
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
+                                {isDeletingCandidate ? 'Removing...' : 'Remove'}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1035,8 +1056,14 @@ const TestPage: React.FC = () => {
             {/* Show current scheduled test time if available */}
             {test?.scheduled_at && (
               <div className="mb-2">
-                <span className="font-medium">Current Scheduled Test:&nbsp;</span>
+                <span className="font-medium">Current Scheduled Test Start:&nbsp;</span>
                 <span className="text-blue-700">{formatDate(test.scheduled_at)}</span>
+              </div>
+            )}
+            {test?.assessment_deadline && (
+              <div className="mb-2">
+                <span className="font-medium">Current Assessment End:&nbsp;</span>
+                <span className="text-blue-700">{formatDate(test.assessment_deadline)}</span>
               </div>
             )}
             <div className="space-y-2"> 
@@ -1112,8 +1139,8 @@ const TestPage: React.FC = () => {
                     <Input value={formState.total_marks} onChange={e => handleFieldChange('total_marks', e.target.value)} className="max-w-md" />
                   </div>
                   <div className="flex gap-4 pt-4">
-                    <Button onClick={handleSave} disabled={isUpdatingTest}>
-                      {isUpdatingTest ? 'Saving...' : 'Save Changes'}
+                    <Button disabled title="Not implemented">
+                      Save Changes
                     </Button>
                     <Button variant="outline" onClick={() => { setEditMode(false); setFormState(null); setUpdateError(null); setUpdateSuccess(null); }}>Cancel</Button>
                   </div>

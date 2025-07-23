@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Edit,
   FileText,
-  Copy,
   Trash2,
   ArrowUpDown,
   ArrowUp,
@@ -34,15 +33,11 @@ const getStatusBadgeProps = (status: string) => {
   }
 };
 
-interface ColumnsProps {
+type ColumnsProps = {
   onDelete: (testId: string) => void;
-  onDuplicate: (testId: string) => void;
-}
+};
 
-export const createColumns = ({
-  onDelete,
-  onDuplicate,
-}: ColumnsProps): ColumnDef<Test>[] => [
+export const createColumns = ({ onDelete }: ColumnsProps): ColumnDef<Test>[] => [
   {
     accessorKey: "test_id",
     header: ({ column }) => {
@@ -67,6 +62,17 @@ export const createColumns = ({
       <div className="font-medium">{row.getValue("test_id")}</div>
     ),
   },
+// ...existing code...
+
+// Add this column INSIDE the exported array if you want to show job description:
+// {
+//   accessorKey: "job_description",
+//   header: "Job Description",
+//   cell: ({ row }) => {
+//     const desc = row.getValue("job_description") as string;
+//     return <span title={desc}>{desc?.slice(0, 60)}{desc && desc.length > 60 ? '...' : ''}</span>;
+//   }
+// },
   {
     accessorKey: "test_name",
     header: ({ column }) => {
@@ -233,18 +239,7 @@ export const createColumns = ({
             </Button>
           </Link>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent row click when clicking duplicate
-              onDuplicate(test.test_id);
-            }}
-            title="Duplicate Test"
-          >
-            <Copy className="h-4 w-4" />
-          </Button>
+
 
           <Button
             variant="ghost"

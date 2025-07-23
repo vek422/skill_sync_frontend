@@ -17,7 +17,7 @@ export default function LoginPage() {
       localStorage.setItem('token', result.data.token);
 
       if (result.data.role === "candidate") {
-        navigate("/candidate/dashboard"); 
+        navigate("/candidate/");
       } else if (result.data.role === "recruiter") {
         navigate("/recruiter/dashboard");
       }
