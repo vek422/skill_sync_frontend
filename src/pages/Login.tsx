@@ -2,27 +2,43 @@ import { Link, useNavigate } from "react-router-dom";
 import { LoginForm } from "../components/LoginForm";
 import { Card } from "@/components/ui/card";
 import { ModeToggle } from "@/components/mode-toggle";
-import { useLoginMutation } from "@/api/authApi";
+import { useLoginMutation, useProfileQuery } from "@/api/authApi";
+import { useAppDispatch } from "@/store";
+import { setCredentials } from "@/store/slices/authSlice";
 
 export default function LoginPage() {
   const [login, { isLoading }] = useLoginMutation();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const handleLogin = async (data: { email: string; password: string }) => {
-    const result = await login({ email: data.email, password: data.password });
+    try {
+      const result = await login({
+        email: data.email,
+        password: data.password,
+      }).unwrap();
 
-    if ("data" in result && result.data) {
-      console.log("Login result:", result.data);
-      
-      // Store the token for authenticated requests
-      localStorage.setItem('token', result.data.token);
+      console.log(`token : ${result.token} user_id:${result.user_id}`);
 
-      if (result.data.role === "candidate") {
+      // Update Redux store with credentials - this will be persisted automatically
+      dispatch(
+        setCredentials({
+          token: result?.token,
+          user: {
+            name: data.email.split("@")[0], // Use email prefix as temporary name
+            email: data.email,
+            role: result.role === "candidate" ? "candaidate" : "recruiter", // Note: keeping the typo for consistency
+            user_id: result.user_id.toString(),
+          },
+        })
+      );
+
+      if (result.role === "candidate") {
         navigate("/candidate/");
-      } else if (result.data.role === "recruiter") {
+      } else if (result.role === "recruiter") {
         navigate("/recruiter/dashboard");
       }
-    } else {
-      console.log("Login error:", result);
+    } catch (error) {
+      console.log("Login error:", error);
     }
   };
 

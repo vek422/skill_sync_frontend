@@ -12,7 +12,7 @@ interface ProfileResponse {
 
 const authApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        login: builder.mutation<{ token: string, role: "candidate" | "recruiter",userid:number }, { email: string, password: string }>({
+        login: builder.mutation<{ token: string, role: "candidate" | "recruiter", user_id: number }, { email: string, password: string }>({
             query: (credentials) => ({
                 url: '/auth/login',
                 method: 'POST',

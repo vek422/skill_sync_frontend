@@ -27,6 +27,8 @@ import {
 import { DropdownMenuItem } from "./ui/dropdown-menu";
 import { Link, useNavigate } from "react-router-dom";
 import { useLogoutMutation, useProfileQuery } from "@/api/authApi";
+import { useAppDispatch } from "@/store";
+import { clearCredentials } from "@/store/slices/authSlice";
 const navItems = [
   {
     label: "Dashboard",
@@ -56,11 +58,15 @@ const navItems = [
 ];
 
 export function AppSidebar() {
-
   const navigate = useNavigate();
-  
+  const dispatch = useAppDispatch();
+
   // Fetch user profile - this will automatically fetch when component mounts
-  const { data: profile, isLoading: profileLoading, error: profileError } = useProfileQuery();
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useProfileQuery();
   console.log("Profile data:", profile);
   const [logoutMutation, { isLoading: logoutLoading }] = useLogoutMutation();
 
@@ -70,18 +76,17 @@ export function AppSidebar() {
     } catch (error) {
       console.log("Logout API failed (this is OK):", error);
     } finally {
-      // Always clear tokens and redirect, regardless of API success/failure
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
+      // Clear Redux store (this will also clear persisted state)
+      dispatch(clearCredentials());
       navigate("/login");
     }
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -113,9 +118,11 @@ export function AppSidebar() {
               <AvatarImage src="https://github.com/shadcn.png"></AvatarImage>
               <AvatarFallback>VK</AvatarFallback>
             </Avatar>
-             <div>
+            <div>
               <p className="text-sm text-left">
-                {profileLoading ? "Loading..." : profile?.name || "Unknown User"}
+                {profileLoading
+                  ? "Loading..."
+                  : profile?.name || "Unknown User"}
               </p>
               <p className="text-sm text-muted-foreground">
                 {profileLoading ? "..." : profile?.email || "No email"}
@@ -127,8 +134,8 @@ export function AppSidebar() {
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48">
             <DropdownMenuItem className="w-full">
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 className="w-full"
                 onClick={handleLogout}
                 disabled={logoutLoading}
