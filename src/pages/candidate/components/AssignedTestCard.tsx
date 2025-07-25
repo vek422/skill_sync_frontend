@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ interface AssignedTestCardProps {
   deadline?: string;
   status: string;
   onAction: () => void;
-  countdownText?: string;
+  scheduledAt?: string;
 }
 
 export function AssignedTestCard({
@@ -27,7 +27,7 @@ export function AssignedTestCard({
   deadline,
   status,
   onAction,
-  countdownText,
+  scheduledAt,
 }: AssignedTestCardProps) {
   const [showFullJD, setShowFullJD] = useState(false);
   const getStatusColor = (status: string) => {
@@ -52,31 +52,52 @@ export function AssignedTestCard({
         </Button>
       );
     }
-    switch (status) {
-      case "scheduled":
-        return (
-          <Button onClick={onAction} className="w-full">
-            <Clock className="mr-2 h-4 w-4" />
-            Start Test
-          </Button>
-        );
-      case "ongoing":
-        return (
-          <Button onClick={onAction} variant="outline" className="w-full">
-            <Timer className="mr-2 h-4 w-4" />
-            Resume Test
-          </Button>
-        );
-      case "completed":
-        return (
-          <Button onClick={onAction} variant="secondary" className="w-full">
-            View Results
-          </Button>
-        );
-      default:
-        return null;
+    // Only show Start Test if test is live (ongoing)
+    if (status === "ongoing") {
+      return (
+        <Button onClick={onAction} className="w-full">
+          <Clock className="mr-2 h-4 w-4" />
+          Start Test
+        </Button>
+      );
     }
+    // If test is scheduled and start time is in future, show countdown only
+    if (status === "scheduled") {
+      return null;
+    }
+    if (status === "completed") {
+      return (
+        <Button onClick={onAction} variant="secondary" className="w-full">
+          View Results
+        </Button>
+      );
+    }
+    return null;
   };
+
+  // Live countdown state
+  const [countdown, setCountdown] = useState<string>("");
+  useEffect(() => {
+    if (status === "scheduled" && scheduledAt) {
+      const target = new Date(scheduledAt).getTime();
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const diff = target - now;
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setCountdown(`${hours}h ${minutes}m ${seconds}s until start`);
+        } else {
+          setCountdown("Starting soon...");
+          clearInterval(interval);
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setCountdown("");
+    }
+  }, [status, scheduledAt]);
 
   return (
     <motion.div
@@ -86,10 +107,10 @@ export function AssignedTestCard({
       className="relative"
     >
       <Card className="hover:shadow-lg transition-shadow duration-200 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950 border border-primary/20">
-        {countdownText && status === "scheduled" && (
+        {countdown && status === "scheduled" && (
           <div className="absolute -top-2 -right-2 z-10">
             <Badge variant="destructive" className="text-xs font-medium">
-              {countdownText}
+              {countdown}
             </Badge>
           </div>
         )}

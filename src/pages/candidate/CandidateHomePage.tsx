@@ -115,10 +115,10 @@ export default function CandidateHomePage() {
                       testName={test.test_name || test.testName || test.name}
                       jobDescription={test.job_description}
                       scheduledTime={new Date(test.scheduled_at).toLocaleString()}
+                      scheduledAt={test.scheduled_at}
                       duration={test.duration ? `${test.duration} mins` : `${Math.round((new Date(test.assessment_deadline).getTime() - new Date(test.scheduled_at).getTime()) / 60000)} mins`}
                       deadline={new Date(test.assessment_deadline).toLocaleString()}
                       status={test.status || "scheduled"}
-                      countdownText={getCountdownText(new Date(test.scheduled_at))}
                       onAction={() => handleTestAction(test.assessment_id || test.id || test.test_id, test.status || "scheduled")}
                     />
                   </motion.div>
