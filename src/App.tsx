@@ -4,10 +4,8 @@ import { Provider } from "react-redux";
 import { store, persistor } from "./store";
 import { PersistGate } from "redux-persist/integration/react";
 import { ThemeProvider } from "./components/theme-provider";
-<<<<<<< HEAD
 import React, { useEffect } from 'react';
-=======
->>>>>>> f1a706b814fe670de20c0b682668871b1bd42284
+
 
 export default function App() {
   useEffect(() => {

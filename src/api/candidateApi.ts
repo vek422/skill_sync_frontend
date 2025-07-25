@@ -182,6 +182,14 @@ const candidateApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Candidates"]
     }),
 
+    // Get single candidate application (for viewing screening result)
+    getCandidateApplication: builder.query<CandidateApplication, number>({
+      query: (applicationId) => ({
+        url: `/candidate-applications/${applicationId}`,
+        method: 'GET'
+      }),
+      providesTags: ["Candidates"]
+    }),
     // Create single candidate application (for individual uploads)
     createSingleCandidate: builder.mutation<CandidateApplication, BulkApplicationItem>({
       query: (candidateData) => ({
@@ -227,5 +235,6 @@ export const {
   useCreateSingleCandidateMutation,
   useGetRecruiterDashboardSummaryQuery,
   useShortlistBulkCandidatesMutation,
-  useGetCandidateAssessmentsQuery
+  useGetCandidateAssessmentsQuery,
+  useGetCandidateApplicationQuery
 } = candidateApi;

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetTestByIdQuery, useUpdateTestMutation, useUpdateSkillGraphMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
-import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation } from "@/api/candidateApi";
+import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation, useGetCandidateApplicationQuery } from "@/api/candidateApi";
 import { parseExcelFile, downloadSampleTemplate, validateFileType } from "@/utils/excelParser";
 import type { ExcelCandidateItem } from "@/utils/excelParser";
 import {
@@ -49,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -219,7 +220,16 @@ const TestPage: React.FC = () => {
   const [deleteTest] = useDeleteTestMutation();
   // (Removed duplicate handleDeleteTest)
 
-  // ...existing code for updateTest and other handlers...
+
+  // Dialog state for viewing candidate result
+  const [viewResultId, setViewResultId] = useState<number | null>(null);
+  const handleViewResult = (applicationId: number) => {
+    setViewResultId(applicationId);
+  };
+  const handleCloseResultDialog = () => {
+    setViewResultId(null);
+  };
+  const { data: candidateResult, isLoading: resultLoading, error: resultError } = useGetCandidateApplicationQuery(viewResultId ?? 0, { skip: !viewResultId });
 
   // Normalize candidates from API to a consistent structure for the table
   const normalizedCandidates = React.useMemo(() => {
@@ -231,7 +241,7 @@ const TestPage: React.FC = () => {
       resume_link: c['resume_link'],
       resume_score: c['resume_score'] ?? null,
       is_shortlisted: c['is_shortlisted'],
-      // ...other fields as needed...
+      screening_status: c['screening_status'] ?? null,
       key: (c['candidate_email'] || '') + (c['resume_score'] ?? idx),
     }));
   }, [candidates]);
@@ -662,8 +672,17 @@ const TestPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Resume Parsing</span>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-blue-700 dark:text-blue-200">2/3</span>
-                    <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                    {(() => {
+                      const total = candidates?.length || 0;
+                      const completed = candidates?.filter(c => c.screening_status === 'completed').length || 0;
+                      const pending = candidates?.filter(c => c.screening_status === 'pending').length || 0;
+                      return (
+                        <>
+                          <span className="text-xs text-blue-700 dark:text-blue-200">{completed}/{total}</span>
+                          {pending > 0 && <Loader2 className="h-4 w-4 text-blue-500 animate-spin ml-1" />}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
@@ -948,6 +967,7 @@ const TestPage: React.FC = () => {
                       <TableHead>Resume Link</TableHead>
                       <TableHead>Score</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Screening Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1012,6 +1032,17 @@ const TestPage: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell>
+                          {candidate.screening_status === 'completed' ? (
+                            <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Completed</span>
+                          ) : candidate.screening_status === 'pending' ? (
+                            <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Pending</span>
+                          ) : candidate.screening_status === 'failed' ? (
+                            <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Failed</span>
+                          ) : (
+                            <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
@@ -1027,10 +1058,10 @@ const TestPage: React.FC = () => {
                                 <Download className="h-4 w-4 mr-2" />
                                 Download Resume
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Results
-                              </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewResult(candidate.application_id)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Results
+                        </DropdownMenuItem>
                               <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteCandidate(candidate.application_id, candidate)} disabled={isDeletingCandidate}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 {isDeletingCandidate ? 'Removing...' : 'Remove'}
@@ -1206,6 +1237,68 @@ const TestPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* ...existing code... */}
+      <Dialog open={!!viewResultId} onOpenChange={handleCloseResultDialog}>
+        <DialogContent className="max-w-3xl p-8 bg-white rounded-xl shadow-2xl border border-gray-200">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-extrabold mb-2 text-gray-900">Screening Report</DialogTitle>
+            <DialogDescription className="mb-4 text-base text-gray-600">Detailed screening results for the candidate application.</DialogDescription>
+          </DialogHeader>
+          {resultLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-4 text-lg">Loading result...</span>
+            </div>
+          ) : resultError ? (
+            <div className="text-red-600 text-lg">Failed to load result.</div>
+          ) : candidateResult ? (
+            <div className="space-y-6">
+              {/* Candidate Info Section */}
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="flex-1">
+                  <div className="font-bold text-xl mb-1 text-gray-900">{candidateResult.candidate_name}</div>
+                  <div className="text-base text-gray-700 mb-2">{candidateResult.candidate_email}</div>
+                  <div className="mb-3">
+                    <a href={candidateResult.resume_link} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline font-medium text-base">View Resume</a>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 capitalize">{candidateResult.screening_status}</span>
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    {candidateResult.is_shortlisted && (
+                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">Shortlisted</span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500 mb-2">
+                    <span className="font-medium">Applied:</span> {formatDate(candidateResult.applied_at)}<br />
+                    <span className="font-medium">Screened:</span> {formatDate(candidateResult.screening_completed_at)}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-base">
+                    <div className="font-semibold text-gray-700">Resume Score</div>
+                    <div className="font-bold text-gray-900">{candidateResult.resume_score ?? '-'}</div>
+                    <div className="font-semibold text-gray-700">Skill Match %</div>
+                    <div className="font-bold text-gray-900">{candidateResult.skill_match_percentage ?? '-'}</div>
+                    <div className="font-semibold text-gray-700">Experience Score</div>
+                    <div className="font-bold text-gray-900">{candidateResult.experience_score ?? '-'}</div>
+                    <div className="font-semibold text-gray-700">Education Score</div>
+                    <div className="font-bold text-gray-900">{candidateResult.education_score ?? '-'}</div>
+                  </div>
+                </div>
+              </div>
+              {/* AI Reasoning Section */}
+              <div className="mt-6">
+                <div className="font-bold text-lg mb-2 text-gray-900">AI Reasoning</div>
+                <div className="bg-gray-50 rounded-lg p-4 text-base text-gray-800 whitespace-pre-line border border-gray-200 shadow-sm">
+                  {candidateResult.ai_reasoning}
+                </div>
+              </div>
+              {/* Hide Parsed Resume and Shortlisting Reason */}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

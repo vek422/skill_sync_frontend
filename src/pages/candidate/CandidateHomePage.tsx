@@ -104,25 +104,34 @@ export default function CandidateHomePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {assessments
                 .filter((test: any) => test.status !== "completed")
-                .map((test: any, index: number) => (
-                  <motion.div
-                    key={test.id || test.test_id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                  >
-                    <AssignedTestCard
-                      testName={test.test_name || test.testName || test.name}
-                      jobDescription={test.job_description}
-                      scheduledTime={new Date(test.scheduled_at).toLocaleString()}
-                      scheduledAt={test.scheduled_at}
-                      duration={test.duration ? `${test.duration} mins` : `${Math.round((new Date(test.assessment_deadline).getTime() - new Date(test.scheduled_at).getTime()) / 60000)} mins`}
-                      deadline={new Date(test.assessment_deadline).toLocaleString()}
-                      status={test.status || "scheduled"}
-                      onAction={() => handleTestAction(test.assessment_id || test.id || test.test_id, test.status || "scheduled")}
-                    />
-                  </motion.div>
-                ))}
+                .map((test: any, index: number) => {
+                  const scheduledDate = new Date(test.scheduled_at);
+                  const now = new Date();
+                  const isScheduled = (test.status === "scheduled" && scheduledDate > now);
+                  const isLive = test.status === "ongoing";
+                  const countdown = isScheduled ? getCountdownText(scheduledDate) : undefined;
+                  return (
+                    <motion.div
+                      key={test.id || test.test_id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <AssignedTestCard
+                        testName={test.test_name || test.testName || test.name}
+                        jobDescription={test.job_description}
+                        scheduledTime={scheduledDate.toLocaleString()}
+                        scheduledAt={test.scheduled_at}
+                        duration={test.duration ? `${test.duration} mins` : `${Math.round((new Date(test.assessment_deadline).getTime() - scheduledDate.getTime()) / 60000)} mins`}
+                        deadline={new Date(test.assessment_deadline).toLocaleString()}
+                        status={test.status || "scheduled"}
+                        countdown={countdown}
+                        showStartButton={isLive}
+                        onAction={() => handleTestAction(test.assessment_id || test.id || test.test_id, test.status || "scheduled")}
+                      />
+                    </motion.div>
+                  );
+                })}
             </div>
           )}
         </motion.div>
