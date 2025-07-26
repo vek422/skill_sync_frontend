@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { useProfileQuery } from "@/api/authApi";
 import { useGetCandidateAssessmentsQuery } from "@/api/candidateApi";
 import { AssignedTestCard } from "./components/AssignedTestCard";
@@ -7,25 +6,23 @@ import { EmptyState } from "./components/EmptyState";
 import { motion } from "motion/react";
 import { User } from "lucide-react";
 
-interface Test {
-  id: string;
-  testName: string;
-  scheduledTime: string;
-  duration: string;
-  status: "scheduled" | "ongoing" | "completed";
-  scheduledDate: Date;
-}
-
 export default function CandidateHomePage() {
+  const navigate = useNavigate();
+
   // Get candidate info from Redux auth state
 
   // Fetch profile data from API
-  const { data: profile, isLoading: profileLoading } = useProfileQuery();
+  const { data: profile } = useProfileQuery();
   const candidateName = profile?.name || "Candidate";
   const candidateId = profile?.user_id;
 
   // Fetch assessments/tests for candidate
-  const { data: assessments = [], isLoading, isError, refetch } = useGetCandidateAssessmentsQuery(candidateId, { skip: !candidateId });
+  const {
+    data: assessments = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useGetCandidateAssessmentsQuery(candidateId || 0, { skip: !candidateId });
 
   const getCountdownText = (scheduledDate: Date): string | undefined => {
     const now = new Date();
@@ -47,11 +44,25 @@ export default function CandidateHomePage() {
       return `${minutes}m`;
     }
   };
-
   const handleTestAction = (testId: string, status: string) => {
     // Handle test actions based on status
     console.log(`Action for test ${testId} with status ${status}`);
-    // Add your navigation logic here
+
+    if (status === "completed" || status === "finished") {
+      // Navigate to results/report page (if available)
+      navigate(`/candidate/test/${testId}/results`);
+    } else if (
+      status === "ongoing" ||
+      status === "in-progress" ||
+      status === "started" ||
+      status === "live" ||
+      status === "active" ||
+      status === "available" ||
+      status === "scheduled"
+    ) {
+      // Navigate to test interface
+      navigate(`/candidate/test/${testId}`);
+    }
   };
 
   const handleRefresh = () => {
@@ -97,7 +108,7 @@ export default function CandidateHomePage() {
           {isLoading ? (
             <div>Loading assessments...</div>
           ) : isError ? (
-            <EmptyState onRefresh={handleRefresh} message="Failed to load assessments. Try again." />
+            <EmptyState onRefresh={handleRefresh} />
           ) : assessments.length === 0 ? (
             <EmptyState onRefresh={handleRefresh} />
           ) : (
@@ -107,9 +118,12 @@ export default function CandidateHomePage() {
                 .map((test: any, index: number) => {
                   const scheduledDate = new Date(test.scheduled_at);
                   const now = new Date();
-                  const isScheduled = (test.status === "scheduled" && scheduledDate > now);
+                  const isScheduled =
+                    test.status === "scheduled" && scheduledDate > now;
                   const isLive = test.status === "ongoing";
-                  const countdown = isScheduled ? getCountdownText(scheduledDate) : undefined;
+                  const countdown = isScheduled
+                    ? getCountdownText(scheduledDate)
+                    : undefined;
                   return (
                     <motion.div
                       key={test.id || test.test_id}
@@ -122,12 +136,27 @@ export default function CandidateHomePage() {
                         jobDescription={test.job_description}
                         scheduledTime={scheduledDate.toLocaleString()}
                         scheduledAt={test.scheduled_at}
-                        duration={test.duration ? `${test.duration} mins` : `${Math.round((new Date(test.assessment_deadline).getTime() - scheduledDate.getTime()) / 60000)} mins`}
-                        deadline={new Date(test.assessment_deadline).toLocaleString()}
+                        duration={
+                          test.duration
+                            ? `${test.duration} mins`
+                            : `${Math.round(
+                                (new Date(test.assessment_deadline).getTime() -
+                                  scheduledDate.getTime()) /
+                                  60000
+                              )} mins`
+                        }
+                        deadline={new Date(
+                          test.assessment_deadline
+                        ).toLocaleString()}
                         status={test.status || "scheduled"}
                         countdown={countdown}
                         showStartButton={isLive}
-                        onAction={() => handleTestAction(test.assessment_id || test.id || test.test_id, test.status || "scheduled")}
+                        onAction={() =>
+                          handleTestAction(
+                            test.assessment_id || test.id || test.test_id,
+                            test.status || "scheduled"
+                          )
+                        }
                       />
                     </motion.div>
                   );

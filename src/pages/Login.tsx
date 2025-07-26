@@ -24,9 +24,9 @@ export default function LoginPage() {
         setCredentials({
           token: result?.token,
           user: {
-            name: data.email.split("@")[0], // Use email prefix as temporary name
+            name: data.email.split("@")[0],
             email: data.email,
-            role: result.role === "candidate" ? "candaidate" : "recruiter", // Note: keeping the typo for consistency
+            role: result.role === "candidate" ? "candaidate" : "recruiter",
             user_id: result.user_id.toString(),
           },
         })

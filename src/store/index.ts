@@ -4,19 +4,21 @@ import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import { combineReducers } from "@reduxjs/toolkit";
 import { authReducer } from "./slices/authSlice";
+import { assessmentReducer } from "./slices/assessmentSlice";
 import { apiSlice } from "./apiSlice";
 import { setAuthTokenGetter } from "../api";
 
 // Create the combined reducer including API slice
 const rootReducer = combineReducers({
     auth: authReducer,
+    assessment: assessmentReducer,
     [apiSlice.reducerPath]: apiSlice.reducer
 });
 
 const persistConfig = {
     storage,
     key: "root",
-    whitelist: ["auth"]
+    whitelist: ["auth", "assessment"] // Persist both auth and assessment state
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

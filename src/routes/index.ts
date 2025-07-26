@@ -19,6 +19,8 @@ import { RecruiterLayout } from "@/components/layouts/RecruiterLayout";
 import Tests from "@/pages/recruiter/Tests";
 import CandidatesLayout from "@/components/layouts/CandidateLayout";
 import Home from "@/pages/candidate/Home";
+import TestInstructionPage from "@/pages/candidate/TestInstruction";
+import TestInterface from "@/pages/candidate/TestInterface";
 
 
 export const router = createBrowserRouter([
@@ -91,14 +93,15 @@ export const router = createBrowserRouter([
         path: "/candidate/assessment/:id",
         Component: withAuthGaurd(Assessment),
     },
-    // {
-    //     path: "/candidate/test/:id",
-    //     Component: withAuthGaurd(Chatbot),
-    // },
-    // {
-    //     path: "/candidate/completed",
-    //     Component: withAuthGaurd(Completed),
-    // },
+    {
+        path: "/candidate/test/:id/instruction",
+        Component: withAuthGaurd(TestInstructionPage),
+    },
+
+    {
+        path: "/candidate/test/:id",
+        Component: withAuthGaurd(TestInterface),
+    },
     {
         path: "*",
         Component: FallbackPage,

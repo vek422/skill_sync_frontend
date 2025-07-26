@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Clock, Calendar, Timer, Eye, EyeOff } from "lucide-react";
 import { motion } from "motion/react";
 
-
 interface AssignedTestCardProps {
   testName: string;
   jobDescription?: string;
@@ -18,7 +17,7 @@ interface AssignedTestCardProps {
 }
 
 export function AssignedTestCard({
-// ...existing code...
+  // ...existing code...
 
   testName,
   jobDescription,
@@ -33,16 +32,24 @@ export function AssignedTestCard({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "scheduled":
+      case "live":
+      case "active":
+      case "available":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
       case "ongoing":
+      case "in-progress":
+      case "started":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       case "completed":
+      case "finished":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "ended":
+      case "expired":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
-
   const getActionButton = () => {
     if (status === "ended") {
       return (
@@ -134,8 +141,8 @@ export function AssignedTestCard({
                 {showFullJD
                   ? jobDescription
                   : jobDescription.length > 220
-                    ? jobDescription.slice(0, 220) + "..."
-                    : jobDescription}
+                  ? jobDescription.slice(0, 220) + "..."
+                  : jobDescription}
               </span>
               {jobDescription.length > 220 && (
                 <Button
@@ -144,7 +151,11 @@ export function AssignedTestCard({
                   className="ml-2 px-2 py-0 text-xs text-blue-600 dark:text-purple-300 hover:bg-blue-100 dark:hover:bg-purple-900"
                   onClick={() => setShowFullJD((v) => !v)}
                 >
-                  {showFullJD ? <EyeOff className="inline w-4 h-4 mr-1" /> : <Eye className="inline w-4 h-4 mr-1" />}
+                  {showFullJD ? (
+                    <EyeOff className="inline w-4 h-4 mr-1" />
+                  ) : (
+                    <Eye className="inline w-4 h-4 mr-1" />
+                  )}
                   {showFullJD ? "Show less" : "Show more"}
                 </Button>
               )}
@@ -153,16 +164,24 @@ export function AssignedTestCard({
           <div className="space-y-2">
             <div className="flex items-center text-sm text-muted-foreground">
               <Calendar className="mr-2 h-4 w-4 text-blue-500 dark:text-purple-300" />
-              <span className="font-medium text-blue-700 dark:text-purple-200">{scheduledTime}</span>
+              <span className="font-medium text-blue-700 dark:text-purple-200">
+                {scheduledTime}
+              </span>
             </div>
             <div className="flex items-center text-sm text-muted-foreground">
               <Timer className="mr-2 h-4 w-4 text-pink-500 dark:text-pink-300" />
-              <span className="font-medium text-pink-700 dark:text-pink-200">{duration}</span>
+              <span className="font-medium text-pink-700 dark:text-pink-200">
+                {duration}
+              </span>
             </div>
             {deadline && (
               <div className="flex items-center text-sm text-muted-foreground">
-                <span className="mr-2 text-purple-700 dark:text-purple-300">Deadline:</span>
-                <span className="font-medium text-purple-700 dark:text-purple-200">{deadline}</span>
+                <span className="mr-2 text-purple-700 dark:text-purple-300">
+                  Deadline:
+                </span>
+                <span className="font-medium text-purple-700 dark:text-purple-200">
+                  {deadline}
+                </span>
               </div>
             )}
           </div>
