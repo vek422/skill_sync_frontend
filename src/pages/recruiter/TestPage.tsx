@@ -1,3 +1,11 @@
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 // Utility function to check for unsaved changes
 function hasUnsavedChanges(formState, test) {
   if (!formState || !test) return false;
@@ -76,7 +84,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -370,17 +377,31 @@ const TestPage: React.FC = () => {
 
   // Handler for deleting a candidate application
   const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
-  const handleDeleteCandidate = async (applicationId: number, candidateObj?: any) => {
-    console.log('Attempting to delete candidate application:', { applicationId, candidateObj });
-    if (!window.confirm("Are you sure you want to remove this candidate? This action cannot be undone.")) return;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteCandidate = (applicationId: number, candidateObj?: any) => {
+    setDeleteCandidateId(applicationId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCandidate = async () => {
+    if (!deleteCandidateId) return;
+    setDeleteError(null);
+    setDeleteSuccess(null);
     try {
-      await deleteCandidate(applicationId).unwrap();
-      alert("Candidate application deleted successfully.");
+      await deleteCandidate(deleteCandidateId).unwrap();
+      setDeleteSuccess("Candidate application deleted successfully.");
+      setDeleteDialogOpen(false);
+      setDeleteCandidateId(null);
       refetchCandidates();
     } catch (error: any) {
-      alert(error?.data?.message || "Failed to delete candidate application.");
+      setDeleteError(error?.data?.message || "Failed to delete candidate application.");
     }
   };
+
 
   // Helper for status badge (supports all statuses with distinct colors)
   const getStatusBadge = (status: string) => {
@@ -1314,7 +1335,37 @@ const TestPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      {/* ...existing code... */}
+      {/* Delete Candidate Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Candidate?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this candidate? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 mt-4">
+            <Button variant="destructive" onClick={confirmDeleteCandidate} disabled={isDeletingCandidate}>
+              {isDeletingCandidate ? "Removing..." : "Yes, Remove"}
+            </Button>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingCandidate}>
+              Cancel
+            </Button>
+          </div>
+          {deleteError && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{deleteError}</AlertDescription>
+            </Alert>
+          )}
+          {deleteSuccess && (
+            <Alert variant="default" className="mt-4">
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{deleteSuccess}</AlertDescription>
+            </Alert>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!viewResultId} onOpenChange={handleCloseResultDialog}>
         <DialogContent className="max-w-3xl p-8 bg-white rounded-xl shadow-2xl border border-gray-200">
           <DialogHeader>
