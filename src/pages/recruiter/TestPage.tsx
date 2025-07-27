@@ -38,6 +38,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import SkillGraphDistributionControls from "@/components/SkillGraphDistributionControls";
+import QuestionCountSettings from "@/components/QuestionCountSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1186,7 +1187,21 @@ const TestPage: React.FC = () => {
             <CardContent className="space-y-4">
               {formState && (
                 <>
-                  {/* ...removed SkillGraphDistributionControls slider as requested... */}
+                  {/* Question Count Settings Section */}
+                  {test && (
+                    <div className="mb-8">
+                      <QuestionCountSettings
+                        testId={test.test_id}
+                        highPriorityNodes={test.high_priority_nodes || 0}
+                        mediumPriorityNodes={test.medium_priority_nodes || 0}
+                        lowPriorityNodes={test.low_priority_nodes || 0}
+                        initialHigh={test.high_priority_questions || 0}
+                        initialMedium={test.medium_priority_questions || 0}
+                        initialLow={test.low_priority_questions || 0}
+                        initialTimeLimit={test.time_limit_minutes || 0}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="testName">Test Name</Label>
                     <Input id="testName" value={formState.test_name} onChange={e => handleFieldChange('test_name', e.target.value)} className="max-w-md" />

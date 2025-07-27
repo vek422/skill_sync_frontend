@@ -151,7 +151,7 @@ const testApi = apiSlice.injectEndpoints({
         ];
         const filteredData: Partial<CreateTestRequest> = {};
         for (const key of allowedFields) {
-          if (key in testData) filteredData[key] = testData[key];
+          if (key in testData) (filteredData as any)[key] = (testData as any)[key];
         }
         return {
           url: `/tests/${testId}`,
@@ -186,8 +186,34 @@ const testApi = apiSlice.injectEndpoints({
         data,
       }),
       invalidatesTags: ["Tests"]
-    })
-    ,
+    }),
+
+    // Update question counts and time limit for a test
+    updateQuestionCounts: builder.mutation<
+      {
+        test_id: number;
+        high_priority_questions: number;
+        medium_priority_questions: number;
+        low_priority_questions: number;
+        total_questions: number;
+        time_limit_minutes: number;
+        message: string;
+      },
+      { test_id: number; data: {
+        high_priority_questions: number;
+        medium_priority_questions: number;
+        low_priority_questions: number;
+        total_questions: number;
+        time_limit_minutes: number;
+      } }
+    >({
+      query: ({ test_id, data }) => ({
+        url: `/tests/${test_id}/update-question-counts`,
+        method: 'PUT',
+        data,
+      }),
+      invalidatesTags: ["Tests"],
+    }),
     // Add single candidate to assessment (shortlist)
     addCandidateToAssessment: builder.mutation<AddCandidateToAssessmentResponse, AddCandidateToAssessmentRequest>({
       query: ({ test_id, candidate_id }) => ({
@@ -209,5 +235,6 @@ export const {
   useScheduleTestMutation,
   useDeleteTestMutation,
   useAddCandidateToAssessmentMutation,
-  useBulkAddShortlistedToAssessmentsMutation
+  useBulkAddShortlistedToAssessmentsMutation,
+  useUpdateQuestionCountsMutation
 } = testApi;
