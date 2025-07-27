@@ -141,11 +141,24 @@ const testApi = apiSlice.injectEndpoints({
 
     // Update test (for future use)
     updateTest: builder.mutation<CreateTestResponse, { testId: number; testData: Partial<CreateTestRequest> }>({
-      query: ({ testId, testData }) => ({
-        url: `/tests/${testId}`,
-        method: 'PUT',
-        data: testData
-      }),
+      query: ({ testId, testData }) => {
+        // Only send allowed fields for update
+        const allowedFields = [
+          'job_description',
+          'resume_score_threshold',
+          'max_shortlisted_candidates',
+          'auto_shortlist'
+        ];
+        const filteredData: Partial<CreateTestRequest> = {};
+        for (const key of allowedFields) {
+          if (key in testData) filteredData[key] = testData[key];
+        }
+        return {
+          url: `/tests/${testId}`,
+          method: 'PUT',
+          data: filteredData
+        };
+      },
       invalidatesTags: ["Tests"]
     }),
 

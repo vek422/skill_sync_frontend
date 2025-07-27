@@ -1,3 +1,28 @@
+// Utility function to check for unsaved changes
+function hasUnsavedChanges(formState, test) {
+  if (!formState || !test) return false;
+  const fields = [
+    'test_name',
+    'job_description',
+    'scheduled_at',
+    'time_limit_minutes',
+    'resume_score_threshold',
+    'max_shortlisted_candidates',
+    'auto_shortlist',
+    'total_questions',
+    'total_marks',
+    'application_deadline',
+    'assessment_deadline',
+    'text'
+  ];
+  for (let i = 0; i < fields.length; i++) {
+    const key = fields[i];
+    if (formState[key] !== (test[key] !== undefined ? test[key] : '')) {
+      return true;
+    }
+  }
+  return false;
+}
 // Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -39,6 +64,7 @@ import {
   Activity,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -808,7 +834,7 @@ const TestPage: React.FC = () => {
                           {parsedData ? `Upload ${parsedData.length} Candidates` : 'Parse & Upload'}
                         </>
                       )}
-                    </Button>
+          </Button>
                   </div>
                 )}
                 
@@ -1160,19 +1186,7 @@ const TestPage: React.FC = () => {
             <CardContent className="space-y-4">
               {formState && (
                 <>
-                  {/* Slider for question distribution */}
-                  <div className="mb-8">
-                    <SkillGraphDistributionControls
-                      totalQuestions={formState.total_questions}
-                      setTotalQuestions={val => handleFieldChange('total_questions', val)}
-                      sliderValues={sliderValues}
-                      setSliderValues={setSliderValues}
-                      onUpdate={handleUpdateSkillGraph}
-                      isUpdating={isUpdatingSkillGraph}
-                      error={skillGraphError}
-                      success={skillGraphSuccess}
-                    />
-                  </div>
+                  {/* ...removed SkillGraphDistributionControls slider as requested... */}
                   <div className="space-y-2">
                     <Label htmlFor="testName">Test Name</Label>
                     <Input id="testName" value={formState.test_name} onChange={e => handleFieldChange('test_name', e.target.value)} className="max-w-md" />
@@ -1189,28 +1203,76 @@ const TestPage: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Resume Score Threshold</Label>
-                    <Input value={formState.resume_score_threshold} onChange={e => handleFieldChange('resume_score_threshold', e.target.value)} className="max-w-md" />
+                    <Input
+                      value={formState.resume_score_threshold ?? ''}
+                      onChange={e => handleFieldChange('resume_score_threshold', e.target.value)}
+                      className="max-w-md"
+                      disabled={!formState.auto_shortlist}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Max Shortlisted Candidates</Label>
-                    <Input value={formState.max_shortlisted_candidates} onChange={e => handleFieldChange('max_shortlisted_candidates', e.target.value)} className="max-w-md" />
+                    <Input
+                      value={formState.max_shortlisted_candidates ?? ''}
+                      onChange={e => handleFieldChange('max_shortlisted_candidates', e.target.value)}
+                      className="max-w-md"
+                      disabled={!formState.auto_shortlist}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Auto Shortlist</Label>
-                    <Input value={formState.auto_shortlist ? 'Enabled' : 'Disabled'} onChange={e => handleFieldChange('auto_shortlist', e.target.value === 'Enabled')} className="max-w-md" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Total Questions</Label>
-                    <Input value={formState.total_questions} onChange={e => handleFieldChange('total_questions', Number(e.target.value))} className="max-w-md" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Total Marks</Label>
-                    <Input value={formState.total_marks} onChange={e => handleFieldChange('total_marks', e.target.value)} className="max-w-md" />
+                    <Label htmlFor="auto-shortlist-toggle">Auto Shortlist</Label>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="auto-shortlist-toggle"
+                        checked={!!formState.auto_shortlist}
+                        onCheckedChange={(checked: boolean) => {
+                          handleFieldChange('auto_shortlist', checked);
+                          if (!checked) {
+                            handleFieldChange('resume_score_threshold', null);
+                            handleFieldChange('max_shortlisted_candidates', null);
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-muted-foreground">{formState.auto_shortlist ? 'Enabled' : 'Disabled'}</span>
+                    </div>
                   </div>
                   <div className="flex gap-4 pt-4">
-                    <Button disabled title="Not implemented">
-                      Save Changes
+                    <Button
+                      onClick={async () => {
+                        setUpdateError(null);
+                        setUpdateSuccess(null);
+                        try {
+                          // Only send allowed fields for update
+                          const allowedFields = [
+                            'job_description',
+                            'resume_score_threshold',
+                            'max_shortlisted_candidates',
+                            'auto_shortlist'
+                          ];
+                          const testData: any = {};
+                          for (const key of allowedFields) {
+                            const value = formState[key];
+                            if (value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '')) {
+                              testData[key] = value;
+                            }
+                          }
+                          console.log('Updating test with:', testData);
+                          await updateTest({ testId: Number(testId), testData }).unwrap();
+                          setUpdateSuccess('Test updated successfully!');
+                        } catch (e: any) {
+                          setUpdateError(e?.data?.message || 'Failed to update test');
+                        }
+                      }}
+                      disabled={isUpdatingTest || !hasUnsavedChanges(formState, test)}
+                    >
+                      {isUpdatingTest ? 'Saving...' : 'Save Changes'}
                     </Button>
+
+
+
+
+
+
                     <Button variant="outline" onClick={() => { setEditMode(false); setFormState(null); setUpdateError(null); setUpdateSuccess(null); }}>Cancel</Button>
                   </div>
                   {updateError && <div className="text-red-600 text-sm mt-2">{updateError}</div>}

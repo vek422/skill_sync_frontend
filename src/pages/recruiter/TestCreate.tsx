@@ -80,29 +80,12 @@ const testCreateSchema = z.object({
 type TestCreateFormData = z.infer<typeof testCreateSchema>;
 
 export default function TestCreate() {
-  // State for question distribution (percentages) and total questions
-  const [totalQuestions, setTotalQuestions] = useState(20);
-  // sliderValues: [low%, low+medium%], e.g. [33, 66]
-  const [sliderValues, setSliderValues] = useState<number[]>([33, 66]);
-  const [totalTime, setTotalTime] = useState(0);
-
-  // Calculate question counts from slider
-  const low = sliderValues[0];
-  const medium = sliderValues[1] - sliderValues[0];
-  // const high = 100 - sliderValues[1];
-  const lowCount = Math.round((low / 100) * totalQuestions);
-  const medCount = Math.round((medium / 100) * totalQuestions);
-  const highCount = totalQuestions - lowCount - medCount;
-
-  // Calculate total time whenever distribution changes
-  useEffect(() => {
-    if (lowCount + medCount + highCount !== totalQuestions) {
-      setTotalTime(0);
-      return;
-    }
-    const seconds = lowCount * 45 + medCount * 60 + highCount * 90;
-    setTotalTime(Math.ceil(seconds / 60));
-  }, [lowCount, medCount, highCount, totalQuestions]);
+  // Default values for question distribution
+  const totalQuestions = 15;
+  const lowCount = 5;
+  const medCount = 5;
+  const highCount = 5;
+  const totalTime = Math.ceil((lowCount * 45 + medCount * 60 + highCount * 90) / 60);
   // RTK Query hook for API call with built-in loading states
   const [createTest, { isLoading, error, isSuccess }] = useCreateTestMutation();
   const navigate = useNavigate();
@@ -122,45 +105,20 @@ export default function TestCreate() {
   // Transform form data to API format and submit
   const onSubmit = async (data: TestCreateFormData) => {
     try {
-
-      // Calculate question_distribution counts
-      const low = sliderValues[0];
-      const medium = sliderValues[1] - sliderValues[0];
-      // const high = 100 - sliderValues[1];
-      const lowCount = Math.round((low / 100) * totalQuestions);
-      const medCount = Math.round((medium / 100) * totalQuestions);
-      const highCount = totalQuestions - lowCount - medCount;
-
-      // Transform camelCase form fields to snake_case API fields and include all required fields
-      const apiData: CreateTestRequest & { question_distribution: { low: number; medium: number; high: number } } = {
+      // Always send these fields for test creation
+      const payload = {
         test_name: data.testName,
         job_description: data.jobDescription,
-        auto_shortlist: data.autoShortlist,
-        ...(data.resumeScoreThreshold !== undefined && { 
-          resume_score_threshold: data.resumeScoreThreshold 
-        }),
-        ...(data.maxShortlistedCandidates !== undefined && { 
-          max_shortlisted_candidates: data.maxShortlistedCandidates 
-        }),
-        total_questions: totalQuestions,
-        time_limit_minutes: totalTime,
-        total_marks: totalQuestions, // or set to another value if needed
-        question_distribution: {
-          low: lowCount,
-          medium: medCount,
-          high: highCount
-        }
+        resume_score_threshold: data.autoShortlist ? data.resumeScoreThreshold : null,
+        max_shortlisted_candidates: data.autoShortlist ? data.maxShortlistedCandidates : null,
+        auto_shortlist: data.autoShortlist
       };
-
-      console.log("Submitting test data:", apiData);
-      
+      console.log("Submitting test data:", payload);
       // Call API using RTK Query mutation
-      const result = await createTest(apiData).unwrap();
+      const result = await createTest(payload).unwrap();
       console.log("Test created successfully:", result);
-      
       // Reset form on success
       form.reset();
-      
       // Navigate to tests list or show success message
       // navigate('/recruiter/tests');
       
@@ -182,11 +140,8 @@ export default function TestCreate() {
 
   const jobDescriptionValue = form.watch("jobDescription");
   const characterCount = jobDescriptionValue ? jobDescriptionValue.length : 0;
-  
   // Watch autoShortlist to conditionally enable maxShortlistedCandidates
   const autoShortlistEnabled = form.watch("autoShortlist");
-
-  // Clear maxShortlistedCandidates and resumeScoreThreshold when autoShortlist is disabled
   useEffect(() => {
     if (!autoShortlistEnabled) {
       form.setValue("maxShortlistedCandidates", undefined);
@@ -367,32 +322,6 @@ export default function TestCreate() {
               )}
             </CardContent>
           </Card>
-
-          {/* Question Distribution Slider (multi-thumb, like Skill Graph) */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Question Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SkillGraphDistributionControls
-                totalQuestions={totalQuestions}
-                setTotalQuestions={setTotalQuestions}
-                sliderValues={sliderValues}
-                setSliderValues={setSliderValues}
-                hideUpdateButton
-              />
-              <div className="text-sm mt-1">
-                <span className={lowCount + medCount + highCount === totalQuestions ? "text-green-600" : "text-red-600"}>
-                  Total: {lowCount + medCount + highCount} / {totalQuestions} questions
-                </span>
-              </div>
-              <div className="text-sm mt-1">
-                <span className="font-semibold">Calculated Time: </span>
-                {lowCount + medCount + highCount === totalQuestions ? `${totalTime} minutes` : <span className="text-red-600">(fix distribution)</span>}
-              </div>
-            </CardContent>
-          </Card>
-           {/* Status Messages */}
           {error && (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="pt-6">
