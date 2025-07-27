@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useRef } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -7,32 +8,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 // Utility function to check for unsaved changes
-function hasUnsavedChanges(formState, test) {
-  if (!formState || !test) return false;
-  const fields = [
-    'test_name',
-    'job_description',
-    'scheduled_at',
-    'time_limit_minutes',
-    'resume_score_threshold',
-    'max_shortlisted_candidates',
-    'auto_shortlist',
-    'total_questions',
-    'total_marks',
-    'application_deadline',
-    'assessment_deadline',
-    'text'
-  ];
-  for (let i = 0; i < fields.length; i++) {
-    const key = fields[i];
-    if (formState[key] !== (test[key] !== undefined ? test[key] : '')) {
-      return true;
-    }
-  }
-  return false;
-}
 // Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
-import React, { useState, useEffect } from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetTestByIdQuery, useUpdateTestMutation, useUpdateSkillGraphMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
 import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation, useGetCandidateApplicationQuery } from "@/api/candidateApi";
@@ -45,9 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import SkillGraphDistributionControls from "@/components/SkillGraphDistributionControls";
 import QuestionCountSettings from "@/components/QuestionCountSettings";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -91,14 +66,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import SkillTreeGraph from "@/components/SkillTreeGraph";
-
-
+import { toast } from "sonner"
 
 // --- SkillGraphDistributionControls state for TestPage ---
 // (This replaces the inline component with the reusable one)
 
-
 const TestPage: React.FC = () => {
+  // Ref for file input to allow re-uploading the same file
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   // State for assessment creation feedback
   const [assessmentResult, setAssessmentResult] = useState<{success: boolean, message: string} | null>(null);
   const [bulkAddAssessments, { isLoading: isBulkAddingAssessments }] = useBulkAddShortlistedToAssessmentsMutation();
@@ -149,9 +124,33 @@ const TestPage: React.FC = () => {
     { skip: !testId }
   );
 
+function hasUnsavedChanges(formState, test) {
+  if (!formState || !test) return false;
+  const fields = [
+    'test_name',
+    'job_description',
+    'scheduled_at',
+    'time_limit_minutes',
+    'resume_score_threshold',
+    'max_shortlisted_candidates',
+    'auto_shortlist',
+    'total_questions',
+    'total_marks',
+    'application_deadline',
+    'assessment_deadline',
+    'text'
+  ];
+  for (let i = 0; i < fields.length; i++) {
+    const key = fields[i];
+    if (formState[key] !== (test[key] !== undefined ? test[key] : '')) {
+      return true;
+    }
+  }
+  return false;
+}
 
-  // Fetch test data from API
-  const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQuery(Number(testId), { skip: !testId });
+// Fetch test data from API
+const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
   // Unified test update state
   const [updateTest, { isLoading: isUpdatingTest }] = useUpdateTestMutation();
@@ -361,12 +360,15 @@ const TestPage: React.FC = () => {
     try {
       const result = await shortlistBulk({ test_id: Number(testId), min_score: minScore }).unwrap();
       setShortlistResult(result);
+      if (result && result.message && result.message.toLowerCase().includes("shortlisted") && result.message.toLowerCase().includes("notified")) {
+        toast(`✅ ${result.message}`);
+      }
       // Immediately call assessment creation API
       try {
         await axios.post(`/tests/${testId}/shortlisted/assessments`);
         setAssessmentResult({ success: true, message: "Assessment records created for all shortlisted candidates." });
       } catch (err2: any) {
-        setAssessmentResult({ success: false, message: err2?.response?.data?.message || "Assessment creation failed." });
+        setAssessmentResult({ success: false, message: err2?.response?.data?.message });
       }
       refetchCandidates();
     } catch (err: any) {
@@ -512,6 +514,8 @@ const TestPage: React.FC = () => {
       setParsedData(null);
       setUploadProgress(0);
       setUploadStatus("success");
+      // Reset file input so user can re-upload the same file
+      if (fileInputRef.current) fileInputRef.current.value = "";
       
       // Refetch candidates to update the table
       refetchCandidates();
@@ -519,11 +523,11 @@ const TestPage: React.FC = () => {
       // Show success message with details
       const successMsg = `Successfully uploaded ${uploadResult.success || uploadResult.results?.filter(r => r.status === 'success').length} candidates`;
       const failedCount = uploadResult.failed || uploadResult.results?.filter(r => r.status === 'error').length;
-      
+
       if (failedCount > 0) {
-        setWarnings([`${successMsg}. ${failedCount} failed.`]);
+        toast(`❌ ${successMsg}. ${failedCount} failed. Some candidates could not be uploaded.`);
       } else {
-        setWarnings([successMsg]);
+        toast(successMsg);
       }
       
     } catch (error: any) {
@@ -574,24 +578,33 @@ const TestPage: React.FC = () => {
     }
   };
 
-  if (testLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
-  if (testError || !test) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Test not found</h2>
-          <p className="text-muted-foreground">The test you're looking for doesn't exist.</p>
-        </div>
-      </div>
-    );
+useEffect(() => {
+  if (uploadStatus === "success" && !isParsing && !isUploading) {
+    toast("Candidates uploaded successfully!");
+  } else if (uploadStatus === "error" && !isParsing && !isUploading) {
+    toast("Error uploading candidates.");
   }
+}, [uploadStatus, isParsing, isUploading]);
+
+if (testLoading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  );
+}
+
+if (testError || !test) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-2">Test not found</h2>
+        <p className="text-muted-foreground">The test you're looking for doesn't exist.</p>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -819,6 +832,7 @@ const TestPage: React.FC = () => {
                     onChange={handleCsvUpload}
                     className="flex-1"
                     disabled={isParsing || isUploading}
+                    ref={fileInputRef}
                   />
                   <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
                     <Download className="h-4 w-4 mr-2" />
@@ -868,23 +882,17 @@ const TestPage: React.FC = () => {
                   </div>
                 )}
                 
-                {uploadStatus === "success" && !isParsing && !isUploading && (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    Upload completed successfully!
-                  </div>
-                )}
-                
-                {errors.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-red-600">
-                    <XCircle className="h-4 w-4" />
-                    <div>
-                      {errors.map((error, index) => (
-                        <div key={index}>{error}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
+  {errors.length > 0 && (
+    <div className="flex items-center gap-2 text-sm text-red-600">
+      <XCircle className="h-4 w-4" />
+      <div>
+        {errors.map((error, index) => (
+          <div key={index}>{error}</div>
+        ))}
+      </div>
+    </div>
+  )}
 
                 {warnings.length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-yellow-600">
@@ -939,7 +947,7 @@ const TestPage: React.FC = () => {
                     const res = await bulkAddAssessments(Number(testId)).unwrap();
                     setAssessmentResult({ success: true, message: res.message });
                   } catch (err: any) {
-                    setAssessmentResult({ success: false, message: err?.data?.message || "Assessment creation failed." });
+                    setAssessmentResult({ success: false, message: err?.data?.message});
                   }
                   refetchCandidates();
                 }}
