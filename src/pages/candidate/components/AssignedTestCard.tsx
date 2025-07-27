@@ -60,7 +60,7 @@ export function AssignedTestCard({
       );
     }
     // Only show Start Test if test is live (ongoing)
-    if (status === "ongoing") {
+    if (status === "live") {
       return (
         <Button onClick={onAction} className="w-full">
           <Clock className="mr-2 h-4 w-4" />

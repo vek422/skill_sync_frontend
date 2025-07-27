@@ -32,7 +32,10 @@ export default function TestInterface() {
     (state) => state.assessment
   );
 
-  const handleSubmitAnswer = () => {
+  const handleSubmitAnswer = (skipped = false) => {
+    if (skipped && currentQuestion) {
+      submitAnswer(currentQuestion.question_id, "skipped");
+    }
     if (currentQuestion && selectedOption) {
       submitAnswer(currentQuestion.question_id, selectedOption);
       setSelectedOption("");
@@ -228,8 +231,19 @@ export default function TestInterface() {
       </div>
 
       <div className="py-10 flex gap-4">
-        <Button onClick={handleSubmitAnswer} disabled={!selectedOption}>
+        <Button
+          onClick={() => handleSubmitAnswer()}
+          disabled={!selectedOption}
+          className="cursor-pointer"
+        >
           Submit and Next
+        </Button>
+        <Button
+          onClick={() => handleSubmitAnswer(true)}
+          variant={"outline"}
+          className="cursor-pointer"
+        >
+          Skip
         </Button>
 
         {/* {progress &&
