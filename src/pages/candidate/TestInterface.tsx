@@ -3,8 +3,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import MCQCanvas from "./components/MCQCanvas";
 import { Button } from "@/components/ui/button";
 import { useAssessmentWebSocket } from "@/hooks/useAssessmentWebSocket";
-import { useAppSelector } from "@/store";
 import { useParams } from "react-router-dom";
+import SubmitTest from "./components/SubmitTest";
 
 export default function TestInterface() {
   const { id } = useParams<{ id: string }>();
@@ -28,9 +28,6 @@ export default function TestInterface() {
     autoStart: false,
   });
   console.log(currentQuestion);
-  const { final_score, correct_answers } = useAppSelector(
-    (state) => state.assessment
-  );
 
   const handleSubmitAnswer = (skipped = false) => {
     if (skipped && currentQuestion) {
@@ -56,12 +53,10 @@ export default function TestInterface() {
     console.log("Assessment completed state changed:", assessmentCompleted);
     if (assessmentCompleted) {
       console.log("Assessment completion details:", {
-        final_score,
-        correct_answers,
         progress,
       });
     }
-  }, [assessmentCompleted, final_score, correct_answers, progress]);
+  }, [assessmentCompleted, progress]);
 
   // Show error state
   if (hasError) {
@@ -77,28 +72,18 @@ export default function TestInterface() {
   }
 
   // Show completion state (only when explicitly marked as completed by backend)
-  // if (assessmentCompleted) {
-  //   console.log("🎉 Assessment marked as completed, showing results");
-  //   return (
-  //     <ScrollArea className="w-screen h-screen p-5 px-5 flex">
-  //       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-  //         <h1 className="font-bold text-3xl text-green-600">
-  //           🎉 Assessment Completed!
-  //         </h1>
-  //         {final_score !== null && (
-  //           <div className="text-center">
-  //             <p className="text-xl">
-  //               <strong>Final Score:</strong> {final_score}%
-  //             </p>
-  //             <p className="text-lg">
-  //               <strong>Correct Answers:</strong> {correct_answers}
-  //             </p>
-  //           </div>
-  //         )}
-  //       </div>
-  //     </ScrollArea>
-  //   );
-  // }
+  if (assessmentCompleted) {
+    console.log("🎉 Assessment marked as completed, showing results");
+    return (
+      <ScrollArea className="w-screen h-screen p-5 px-5 flex">
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+          <h1 className="font-bold text-3xl text-green-600">
+            🎉 Assessment Completed!
+          </h1>
+        </div>
+      </ScrollArea>
+    );
+  }
 
   // Show loading state
   if (!isConnected) {
@@ -150,7 +135,7 @@ export default function TestInterface() {
   }
 
   return (
-    <ScrollArea className="w-screen h-screen p-5 px-5 flex">
+    <ScrollArea className="w-screen h-screen  px-5 flex">
       {/* Test Button for debugging */}
       {isConnected && (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -194,26 +179,15 @@ export default function TestInterface() {
         <div>
           {progress && (
             <div className="text-right">
-              <h1 className="font-semibold">
-                Question {progress.answered_questions + 1} of{" "}
-                {progress.total_questions}
-              </h1>
               <div className="text-sm text-gray-600">
-                {(
-                  (progress.answered_questions / progress.total_questions) *
-                  100
-                ).toFixed(1)}
-                % Complete
+                {Number(progress).toFixed(1)}% Complete
               </div>
               {/* Progress bar */}
               <div className="w-32 h-2 bg-gray-200 rounded-full mt-2">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-300"
                   style={{
-                    width: `${
-                      (progress.answered_questions / progress.total_questions) *
-                      100
-                    }%`,
+                    width: `${progress}%`,
                   }}
                 />
               </div>
@@ -222,7 +196,7 @@ export default function TestInterface() {
         </div>
       </div>
 
-      <div>
+      <div className="pt-5">
         <MCQCanvas
           question={currentQuestion}
           selectedOption={selectedOption}
@@ -230,28 +204,24 @@ export default function TestInterface() {
         />
       </div>
 
-      <div className="py-10 flex gap-4">
-        <Button
-          onClick={() => handleSubmitAnswer()}
-          disabled={!selectedOption}
-          className="cursor-pointer"
-        >
-          Submit and Next
-        </Button>
-        <Button
-          onClick={() => handleSubmitAnswer(true)}
-          variant={"outline"}
-          className="cursor-pointer"
-        >
-          Skip
-        </Button>
-
-        {/* {progress &&
-          progress.answered_questions >= progress.total_questions && (
-            <Button onClick={handleCompleteAssessment} variant="secondary">
-              Complete Assessment
-            </Button>
-          )} */}
+      <div className="pt-10 flex gap-4 justify-between w-">
+        <div className="w-full flex gap-2">
+          <Button
+            onClick={() => handleSubmitAnswer()}
+            disabled={!selectedOption}
+            className="cursor-pointer"
+          >
+            Submit and Next
+          </Button>
+          <Button
+            onClick={() => handleSubmitAnswer(true)}
+            variant={"outline"}
+            className="cursor-pointer"
+          >
+            Skip
+          </Button>
+        </div>
+        <SubmitTest completeAssessment={completeAssessment} />
       </div>
     </ScrollArea>
   );

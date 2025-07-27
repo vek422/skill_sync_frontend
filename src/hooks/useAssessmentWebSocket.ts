@@ -87,6 +87,7 @@ export const useAssessmentWebSocket = ({
                 break;
 
             case 'assessment_recovered':
+                console.log(message);
                 dispatch(setAssessmentRecovered({
                     assessment_id: message.data.assessment_id,
                     thread_id: message.data.thread_id,
@@ -131,10 +132,7 @@ export const useAssessmentWebSocket = ({
                         correct_answer: message.data.feedback.correct_answer,
                         message: message.data.feedback.message
                     },
-                    progress: {
-                        answered_questions: message.data.progress.answered,
-                        total_questions: message.data.progress.total
-                    },
+                    progress: message.data.percentage_complete,
                     thread_id: message.data.thread_id
                 }));
 
@@ -152,21 +150,12 @@ export const useAssessmentWebSocket = ({
                 break;
 
             case 'progress_update':
-                dispatch(updateProgress({
-                    answered_questions: message.data.answered_questions,
-                    total_questions: message.data.total_questions
-                }));
+                dispatch(updateProgress(message?.data.percentage_complete));
                 break;
 
             case 'assessment_completed':
                 console.log('🏁 Assessment completion received from backend:', message.data);
-                dispatch(completeAssessment({
-                    final_score: message.data.results?.final_score || 0,
-                    correct_answers: message.data.results?.correct_answers || 0,
-                    total_questions: message.data.results?.total_questions || 0,
-                    assessment_id: message.data.results?.assessment_id || '',
-                    thread_id: message.data.results?.thread_id || ''
-                }));
+                dispatch(completeAssessment());
                 break;
 
             case 'error':
