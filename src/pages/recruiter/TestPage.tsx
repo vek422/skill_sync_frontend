@@ -1,5 +1,15 @@
+import React, { useState, useEffect, useRef } from "react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+// Utility function to check for unsaved changes
 // Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
-import React, { useState, useEffect } from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
 import { useGetTestByIdQuery, useUpdateTestMutation, useUpdateSkillGraphMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
 import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation, useGetCandidateApplicationQuery } from "@/api/candidateApi";
@@ -12,8 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import SkillGraphDistributionControls from "@/components/SkillGraphDistributionControls";
-import { Badge } from "@/components/ui/badge";
+import QuestionCountSettings from "@/components/QuestionCountSettings";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -39,6 +48,7 @@ import {
   Activity,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -49,7 +59,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,14 +66,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import SkillTreeGraph from "@/components/SkillTreeGraph";
-
-
+import { toast } from "sonner"
 
 // --- SkillGraphDistributionControls state for TestPage ---
 // (This replaces the inline component with the reusable one)
 
-
 const TestPage: React.FC = () => {
+  // Ref for file input to allow re-uploading the same file
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   // State for assessment creation feedback
   const [assessmentResult, setAssessmentResult] = useState<{success: boolean, message: string} | null>(null);
   const [bulkAddAssessments, { isLoading: isBulkAddingAssessments }] = useBulkAddShortlistedToAssessmentsMutation();
@@ -115,9 +124,33 @@ const TestPage: React.FC = () => {
     { skip: !testId }
   );
 
+function hasUnsavedChanges(formState, test) {
+  if (!formState || !test) return false;
+  const fields = [
+    'test_name',
+    'job_description',
+    'scheduled_at',
+    'time_limit_minutes',
+    'resume_score_threshold',
+    'max_shortlisted_candidates',
+    'auto_shortlist',
+    'total_questions',
+    'total_marks',
+    'application_deadline',
+    'assessment_deadline',
+    'text'
+  ];
+  for (let i = 0; i < fields.length; i++) {
+    const key = fields[i];
+    if (formState[key] !== (test[key] !== undefined ? test[key] : '')) {
+      return true;
+    }
+  }
+  return false;
+}
 
-  // Fetch test data from API
-  const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQuery(Number(testId), { skip: !testId });
+// Fetch test data from API
+const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
   // Unified test update state
   const [updateTest, { isLoading: isUpdatingTest }] = useUpdateTestMutation();
@@ -327,12 +360,15 @@ const TestPage: React.FC = () => {
     try {
       const result = await shortlistBulk({ test_id: Number(testId), min_score: minScore }).unwrap();
       setShortlistResult(result);
+      if (result && result.message && result.message.toLowerCase().includes("shortlisted") && result.message.toLowerCase().includes("notified")) {
+        toast(`✅ ${result.message}`);
+      }
       // Immediately call assessment creation API
       try {
         await axios.post(`/tests/${testId}/shortlisted/assessments`);
         setAssessmentResult({ success: true, message: "Assessment records created for all shortlisted candidates." });
       } catch (err2: any) {
-        setAssessmentResult({ success: false, message: err2?.response?.data?.message || "Assessment creation failed." });
+        setAssessmentResult({ success: false, message: err2?.response?.data?.message });
       }
       refetchCandidates();
     } catch (err: any) {
@@ -343,17 +379,31 @@ const TestPage: React.FC = () => {
 
   // Handler for deleting a candidate application
   const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
-  const handleDeleteCandidate = async (applicationId: number, candidateObj?: any) => {
-    console.log('Attempting to delete candidate application:', { applicationId, candidateObj });
-    if (!window.confirm("Are you sure you want to remove this candidate? This action cannot be undone.")) return;
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteCandidate = (applicationId: number, candidateObj?: any) => {
+    setDeleteCandidateId(applicationId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteCandidate = async () => {
+    if (!deleteCandidateId) return;
+    setDeleteError(null);
+    setDeleteSuccess(null);
     try {
-      await deleteCandidate(applicationId).unwrap();
-      alert("Candidate application deleted successfully.");
+      await deleteCandidate(deleteCandidateId).unwrap();
+      setDeleteSuccess("Candidate application deleted successfully.");
+      setDeleteDialogOpen(false);
+      setDeleteCandidateId(null);
       refetchCandidates();
     } catch (error: any) {
-      alert(error?.data?.message || "Failed to delete candidate application.");
+      setDeleteError(error?.data?.message || "Failed to delete candidate application.");
     }
   };
+
 
   // Helper for status badge (supports all statuses with distinct colors)
   const getStatusBadge = (status: string) => {
@@ -464,6 +514,8 @@ const TestPage: React.FC = () => {
       setParsedData(null);
       setUploadProgress(0);
       setUploadStatus("success");
+      // Reset file input so user can re-upload the same file
+      if (fileInputRef.current) fileInputRef.current.value = "";
       
       // Refetch candidates to update the table
       refetchCandidates();
@@ -471,11 +523,11 @@ const TestPage: React.FC = () => {
       // Show success message with details
       const successMsg = `Successfully uploaded ${uploadResult.success || uploadResult.results?.filter(r => r.status === 'success').length} candidates`;
       const failedCount = uploadResult.failed || uploadResult.results?.filter(r => r.status === 'error').length;
-      
+
       if (failedCount > 0) {
-        setWarnings([`${successMsg}. ${failedCount} failed.`]);
+        toast(`❌ ${successMsg}. ${failedCount} failed. Some candidates could not be uploaded.`);
       } else {
-        setWarnings([successMsg]);
+        toast(successMsg);
       }
       
     } catch (error: any) {
@@ -526,24 +578,33 @@ const TestPage: React.FC = () => {
     }
   };
 
-  if (testLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
-  if (testError || !test) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Test not found</h2>
-          <p className="text-muted-foreground">The test you're looking for doesn't exist.</p>
-        </div>
-      </div>
-    );
+useEffect(() => {
+  if (uploadStatus === "success" && !isParsing && !isUploading) {
+    toast("Candidates uploaded successfully!");
+  } else if (uploadStatus === "error" && !isParsing && !isUploading) {
+    toast("Error uploading candidates.");
   }
+}, [uploadStatus, isParsing, isUploading]);
+
+if (testLoading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  );
+}
+
+if (testError || !test) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-2">Test not found</h2>
+        <p className="text-muted-foreground">The test you're looking for doesn't exist.</p>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -771,6 +832,7 @@ const TestPage: React.FC = () => {
                     onChange={handleCsvUpload}
                     className="flex-1"
                     disabled={isParsing || isUploading}
+                    ref={fileInputRef}
                   />
                   <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
                     <Download className="h-4 w-4 mr-2" />
@@ -808,7 +870,7 @@ const TestPage: React.FC = () => {
                           {parsedData ? `Upload ${parsedData.length} Candidates` : 'Parse & Upload'}
                         </>
                       )}
-                    </Button>
+          </Button>
                   </div>
                 )}
                 
@@ -820,23 +882,17 @@ const TestPage: React.FC = () => {
                   </div>
                 )}
                 
-                {uploadStatus === "success" && !isParsing && !isUploading && (
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    Upload completed successfully!
-                  </div>
-                )}
-                
-                {errors.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-red-600">
-                    <XCircle className="h-4 w-4" />
-                    <div>
-                      {errors.map((error, index) => (
-                        <div key={index}>{error}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
+  {errors.length > 0 && (
+    <div className="flex items-center gap-2 text-sm text-red-600">
+      <XCircle className="h-4 w-4" />
+      <div>
+        {errors.map((error, index) => (
+          <div key={index}>{error}</div>
+        ))}
+      </div>
+    </div>
+  )}
 
                 {warnings.length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-yellow-600">
@@ -891,7 +947,7 @@ const TestPage: React.FC = () => {
                     const res = await bulkAddAssessments(Number(testId)).unwrap();
                     setAssessmentResult({ success: true, message: res.message });
                   } catch (err: any) {
-                    setAssessmentResult({ success: false, message: err?.data?.message || "Assessment creation failed." });
+                    setAssessmentResult({ success: false, message: err?.data?.message});
                   }
                   refetchCandidates();
                 }}
@@ -1160,19 +1216,21 @@ const TestPage: React.FC = () => {
             <CardContent className="space-y-4">
               {formState && (
                 <>
-                  {/* Slider for question distribution */}
-                  <div className="mb-8">
-                    <SkillGraphDistributionControls
-                      totalQuestions={formState.total_questions}
-                      setTotalQuestions={val => handleFieldChange('total_questions', val)}
-                      sliderValues={sliderValues}
-                      setSliderValues={setSliderValues}
-                      onUpdate={handleUpdateSkillGraph}
-                      isUpdating={isUpdatingSkillGraph}
-                      error={skillGraphError}
-                      success={skillGraphSuccess}
-                    />
-                  </div>
+                  {/* Question Count Settings Section */}
+                  {test && (
+                    <div className="mb-8">
+                      <QuestionCountSettings
+                        testId={test.test_id}
+                        highPriorityNodes={test.high_priority_nodes || 0}
+                        mediumPriorityNodes={test.medium_priority_nodes || 0}
+                        lowPriorityNodes={test.low_priority_nodes || 0}
+                        initialHigh={test.high_priority_questions || 0}
+                        initialMedium={test.medium_priority_questions || 0}
+                        initialLow={test.low_priority_questions || 0}
+                        initialTimeLimit={test.time_limit_minutes || 0}
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="testName">Test Name</Label>
                     <Input id="testName" value={formState.test_name} onChange={e => handleFieldChange('test_name', e.target.value)} className="max-w-md" />
@@ -1189,28 +1247,76 @@ const TestPage: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Resume Score Threshold</Label>
-                    <Input value={formState.resume_score_threshold} onChange={e => handleFieldChange('resume_score_threshold', e.target.value)} className="max-w-md" />
+                    <Input
+                      value={formState.resume_score_threshold ?? ''}
+                      onChange={e => handleFieldChange('resume_score_threshold', e.target.value)}
+                      className="max-w-md"
+                      disabled={!formState.auto_shortlist}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Max Shortlisted Candidates</Label>
-                    <Input value={formState.max_shortlisted_candidates} onChange={e => handleFieldChange('max_shortlisted_candidates', e.target.value)} className="max-w-md" />
+                    <Input
+                      value={formState.max_shortlisted_candidates ?? ''}
+                      onChange={e => handleFieldChange('max_shortlisted_candidates', e.target.value)}
+                      className="max-w-md"
+                      disabled={!formState.auto_shortlist}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Auto Shortlist</Label>
-                    <Input value={formState.auto_shortlist ? 'Enabled' : 'Disabled'} onChange={e => handleFieldChange('auto_shortlist', e.target.value === 'Enabled')} className="max-w-md" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Total Questions</Label>
-                    <Input value={formState.total_questions} onChange={e => handleFieldChange('total_questions', Number(e.target.value))} className="max-w-md" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Total Marks</Label>
-                    <Input value={formState.total_marks} onChange={e => handleFieldChange('total_marks', e.target.value)} className="max-w-md" />
+                    <Label htmlFor="auto-shortlist-toggle">Auto Shortlist</Label>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="auto-shortlist-toggle"
+                        checked={!!formState.auto_shortlist}
+                        onCheckedChange={(checked: boolean) => {
+                          handleFieldChange('auto_shortlist', checked);
+                          if (!checked) {
+                            handleFieldChange('resume_score_threshold', null);
+                            handleFieldChange('max_shortlisted_candidates', null);
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-muted-foreground">{formState.auto_shortlist ? 'Enabled' : 'Disabled'}</span>
+                    </div>
                   </div>
                   <div className="flex gap-4 pt-4">
-                    <Button disabled title="Not implemented">
-                      Save Changes
+                    <Button
+                      onClick={async () => {
+                        setUpdateError(null);
+                        setUpdateSuccess(null);
+                        try {
+                          // Only send allowed fields for update
+                          const allowedFields = [
+                            'job_description',
+                            'resume_score_threshold',
+                            'max_shortlisted_candidates',
+                            'auto_shortlist'
+                          ];
+                          const testData: any = {};
+                          for (const key of allowedFields) {
+                            const value = formState[key];
+                            if (value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '')) {
+                              testData[key] = value;
+                            }
+                          }
+                          console.log('Updating test with:', testData);
+                          await updateTest({ testId: Number(testId), testData }).unwrap();
+                          setUpdateSuccess('Test updated successfully!');
+                        } catch (e: any) {
+                          setUpdateError(e?.data?.message || 'Failed to update test');
+                        }
+                      }}
+                      disabled={isUpdatingTest || !hasUnsavedChanges(formState, test)}
+                    >
+                      {isUpdatingTest ? 'Saving...' : 'Save Changes'}
                     </Button>
+
+
+
+
+
+
                     <Button variant="outline" onClick={() => { setEditMode(false); setFormState(null); setUpdateError(null); setUpdateSuccess(null); }}>Cancel</Button>
                   </div>
                   {updateError && <div className="text-red-600 text-sm mt-2">{updateError}</div>}
@@ -1237,7 +1343,37 @@ const TestPage: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      {/* ...existing code... */}
+      {/* Delete Candidate Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Candidate?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove this candidate? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 mt-4">
+            <Button variant="destructive" onClick={confirmDeleteCandidate} disabled={isDeletingCandidate}>
+              {isDeletingCandidate ? "Removing..." : "Yes, Remove"}
+            </Button>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingCandidate}>
+              Cancel
+            </Button>
+          </div>
+          {deleteError && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{deleteError}</AlertDescription>
+            </Alert>
+          )}
+          {deleteSuccess && (
+            <Alert variant="default" className="mt-4">
+              <AlertTitle>Success</AlertTitle>
+              <AlertDescription>{deleteSuccess}</AlertDescription>
+            </Alert>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!viewResultId} onOpenChange={handleCloseResultDialog}>
         <DialogContent className="max-w-3xl p-8 bg-white rounded-xl shadow-2xl border border-gray-200">
           <DialogHeader>

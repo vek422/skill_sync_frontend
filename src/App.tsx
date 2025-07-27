@@ -5,6 +5,7 @@ import { store, persistor } from "./store";
 import { PersistGate } from "redux-persist/integration/react";
 import { ThemeProvider } from "./components/theme-provider";
 import React, { useEffect } from 'react';
+import { Toaster } from "@/components/ui/sonner"
 
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
         <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <RouterProvider router={router} />
+            <Toaster />
           </ThemeProvider>
         </PersistGate>
       </Provider>
