@@ -73,6 +73,11 @@ export const router = createBrowserRouter([
                 path: "candidates/upload",
                 Component: CandidateUpload,
             }
+            ,
+            {
+                path: "logs",
+                Component: withAuthGaurd((await import("../pages/LogPage")).default),
+            }
         ]
     },
     {
