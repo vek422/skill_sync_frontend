@@ -65,11 +65,8 @@ export type AssessmentState = {
     responses: Record<string, QuestionResponse>;
 
     // Progress tracking
-    progress: Progress | null;
+    progress: number
 
-    // Results
-    final_score: number | null;
-    correct_answers: number | null;
 
     // Error handling
     current_error: string | null;
@@ -105,11 +102,8 @@ const initialState: AssessmentState = {
     responses: {},
 
     // Progress tracking
-    progress: null,
+    progress: 0,
 
-    // Results
-    final_score: null,
-    correct_answers: null,
 
     // Error handling
     current_error: null,
@@ -177,7 +171,7 @@ const assessmentSlice = createSlice({
         setAssessmentRecovered(state, action: PayloadAction<{
             assessment_id: string;
             thread_id: string;
-            progress: Progress;
+            progress: number;
         }>) {
             state.assessment_started = true;
             state.assessment_id = action.payload.assessment_id;
@@ -187,29 +181,9 @@ const assessmentSlice = createSlice({
             state.last_message_timestamp = new Date().toISOString();
         },
 
-        completeAssessment(state, action: PayloadAction<{
-            final_score: number;
-            correct_answers: number;
-            total_questions: number;
-            assessment_id: string;
-            thread_id: string;
-        }>) {
-            // Only complete if we have valid completion data
-            if (action.payload.assessment_id && action.payload.thread_id) {
-                console.log('🏁 Marking assessment as completed with final score:', action.payload.final_score);
-                state.assessment_completed = true;
-                state.end_time = new Date().toISOString();
-                state.final_score = action.payload.final_score;
-                state.correct_answers = action.payload.correct_answers;
-                state.connection_status = 'disconnected';
-                state.last_message_timestamp = new Date().toISOString();
-
-                // Update progress to completion
-                if (state.progress) {
-                    state.progress.answered_questions = action.payload.total_questions;
-                }
-            } else {
-                console.warn('⚠️ Invalid completion data received, not marking assessment as completed');
+        completeAssessment(state) {
+            if (state.assessment_id && state.application_id) {
+                state.assessment_completed = true
             }
         },
 
@@ -258,7 +232,7 @@ const assessmentSlice = createSlice({
                 correct_answer: string;
                 message: string;
             };
-            progress: Progress;
+            progress: number;
             thread_id: string;
         }>) {
             // Update the response with feedback
@@ -273,7 +247,7 @@ const assessmentSlice = createSlice({
         },
 
         // Progress management
-        updateProgress(state, action: PayloadAction<Progress>) {
+        updateProgress(state, action: PayloadAction<number>) {
             state.progress = action.payload;
             state.last_message_timestamp = new Date().toISOString();
         },

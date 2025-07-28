@@ -18,21 +18,7 @@ export default function MCQCanvas({
       {/* Question */}
       <div className="flex flex-col gap-10">
         <Card className="gap-0">
-          <CardHeader className="pb-2">
-            <div className="flex gap-2 flex-wrap">
-              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs font-medium">
-                {question.skill}
-              </span>
-              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md text-xs font-medium">
-                {question.difficulty}
-              </span>
-              {question.time_limit > 0 && (
-                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-xs font-medium">
-                  ⏱️ {question.time_limit}s
-                </span>
-              )}
-            </div>
-          </CardHeader>
+          {/* <CardHeader className="pb-2"></CardHeader> */}
           <CardContent className="pt-0">
             <p className="text-lg leading-relaxed">{question.text}</p>
           </CardContent>
