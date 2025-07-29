@@ -7,6 +7,7 @@ import { authReducer } from "./slices/authSlice";
 import { assessmentReducer } from "./slices/assessmentSlice";
 import { apiSlice } from "./apiSlice";
 import { logsApi } from "../api/logsApi";
+import { candidatesApi } from "../api/candidatesApi";
 import { setAuthTokenGetter } from "../api";
 
 // Create the combined reducer including API slice
@@ -15,6 +16,7 @@ const rootReducer = combineReducers({
     assessment: assessmentReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
     [logsApi.reducerPath]: logsApi.reducer,
+    [candidatesApi.reducerPath]: candidatesApi.reducer,
 });
 
 const persistConfig = {
@@ -42,6 +44,7 @@ export const store = configureStore({
         })
         .concat(apiSlice.middleware)
         .concat(logsApi.middleware)
+        .concat(candidatesApi.middleware)
 });
 
 export const persistor = persistStore(store);

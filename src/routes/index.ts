@@ -16,11 +16,13 @@ import RecruiterRegister from "@/pages/recruiter/Register";
 import RegisterSelect from "@/pages/Register";
 import { RecruiterLayout } from "@/components/layouts/RecruiterLayout";
 
+
 import Tests from "@/pages/recruiter/Tests";
 import CandidatesLayout from "@/components/layouts/CandidateLayout";
 import Home from "@/pages/candidate/Home";
 import TestInstructionPage from "@/pages/candidate/TestInstruction";
 import TestInterface from "@/pages/candidate/TestInterface";
+import CandidatesPage from "../pages/recruiter/CandidatesPage";
 
 
 export const router = createBrowserRouter([
@@ -49,9 +51,23 @@ export const router = createBrowserRouter([
                 path: "dashboard",
                 Component: Dashboard,
             },
+           
+            {
+                path: "candidates",
+                Component: CandidatesPage,
+            }
+            ,
+            {
+                path: "logs",
+                Component: withAuthGaurd((await import("../pages/LogPage")).default),
+            },
             {
                 path: "tests",
                 Component: Tests,
+            },
+              {
+                path: "candidates/upload",
+                Component: CandidateUpload,
             },
             {
                 path: "test/create",
@@ -68,16 +84,8 @@ export const router = createBrowserRouter([
             {
                 path: "test/:id/report",
                 Component: Report,
-            },
-            {
-                path: "candidates/upload",
-                Component: CandidateUpload,
             }
-            ,
-            {
-                path: "logs",
-                Component: withAuthGaurd((await import("../pages/LogPage")).default),
-            }
+           
         ]
     },
     {
