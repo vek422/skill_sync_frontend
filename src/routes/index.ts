@@ -21,6 +21,7 @@ import CandidatesLayout from "@/components/layouts/CandidateLayout";
 import Home from "@/pages/candidate/Home";
 import TestInstructionPage from "@/pages/candidate/TestInstruction";
 import TestInterface from "@/pages/candidate/TestInterface";
+import CandidateReport from "@/pages/recruiter/Component/CandidateReport";
 
 
 export const router = createBrowserRouter([
@@ -70,9 +71,14 @@ export const router = createBrowserRouter([
                 Component: Report,
             },
             {
+                path: "assessments/:assessmentId/report",
+                Component: CandidateReport,
+            },
+            {
                 path: "candidates/upload",
                 Component: CandidateUpload,
-            }
+            },
+
         ]
     },
     {

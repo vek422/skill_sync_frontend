@@ -7,13 +7,29 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-// Utility function to check for unsaved changes
-// Remove duplicate SkillGraphDistributionControls definition at the bottom of the file.
 
-import { useParams, useNavigate } from "react-router-dom";
-import { useGetTestByIdQuery, useUpdateTestMutation, useUpdateSkillGraphMutation, useScheduleTestMutation, useDeleteTestMutation, useAddCandidateToAssessmentMutation, useBulkAddShortlistedToAssessmentsMutation } from "@/api/testApi";
-import { useBulkUploadCandidatesMutation, useGetCandidatesByTestQuery, useShortlistBulkCandidatesMutation, useDeleteCandidateMutation, useGetCandidateApplicationQuery } from "@/api/candidateApi";
-import { parseExcelFile, downloadSampleTemplate, validateFileType } from "@/utils/excelParser";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  useGetTestByIdQuery,
+  useUpdateTestMutation,
+  useUpdateSkillGraphMutation,
+  useScheduleTestMutation,
+  useDeleteTestMutation,
+  useAddCandidateToAssessmentMutation,
+  useBulkAddShortlistedToAssessmentsMutation,
+} from "@/api/testApi";
+import {
+  useBulkUploadCandidatesMutation,
+  useGetCandidatesByTestQuery,
+  useShortlistBulkCandidatesMutation,
+  useDeleteCandidateMutation,
+  useGetCandidateApplicationQuery,
+} from "@/api/candidateApi";
+import {
+  parseExcelFile,
+  downloadSampleTemplate,
+  validateFileType,
+} from "@/utils/excelParser";
 import type { ExcelCandidateItem } from "@/utils/excelParser";
 import {
   Card,
@@ -46,6 +62,7 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
+  FileText,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -66,195 +83,180 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import SkillTreeGraph from "@/components/SkillTreeGraph";
-import { toast } from "sonner"
-
-// --- SkillGraphDistributionControls state for TestPage ---
-// (This replaces the inline component with the reusable one)
+import { toast } from "sonner";
 
 const TestPage: React.FC = () => {
-  // Ref for file input to allow re-uploading the same file
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  // State for assessment creation feedback
-  const [assessmentResult, setAssessmentResult] = useState<{success: boolean, message: string} | null>(null);
-  const [bulkAddAssessments, { isLoading: isBulkAddingAssessments }] = useBulkAddShortlistedToAssessmentsMutation();
-  // Single candidate shortlist mutation
-  const [addCandidateToAssessment, { isLoading: isShortlistingSingle }] = useAddCandidateToAssessmentMutation();
-  const [singleShortlistResult, setSingleShortlistResult] = useState<{success: boolean, message: string} | null>(null);
-  // Handler for single candidate shortlisting
+  const [assessmentResult, setAssessmentResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+  const [bulkAddAssessments, { isLoading: isBulkAddingAssessments }] =
+    useBulkAddShortlistedToAssessmentsMutation();
+  const [addCandidateToAssessment, { isLoading: isShortlistingSingle }] =
+    useAddCandidateToAssessmentMutation();
+  const [singleShortlistResult, setSingleShortlistResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
   const handleShortlistSingle = async (candidate_id: number) => {
     if (!testId || !candidate_id) return;
     setSingleShortlistResult(null);
     try {
-      const result = await addCandidateToAssessment({ test_id: Number(testId), candidate_id }).unwrap();
+      const result = await addCandidateToAssessment({
+        test_id: Number(testId),
+        candidate_id,
+      }).unwrap();
       setSingleShortlistResult(result);
       refetchCandidates();
     } catch (err: any) {
-      setSingleShortlistResult({ success: false, message: err?.data?.message || "Shortlisting failed" });
+      setSingleShortlistResult({
+        success: false,
+        message: err?.data?.message || "Shortlisting failed",
+      });
     }
   };
   const { testId } = useParams<{ testId: string }>();
   const navigate = useNavigate();
 
-  
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<ExcelCandidateItem[] | null>(null);
+  const [parsedData, setParsedData] = useState<ExcelCandidateItem[] | null>(
+    null
+  );
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [isParsing, setIsParsing] = useState(false);
   const [minScore, setMinScore] = useState<number>(60);
-  const [shortlistResult, setShortlistResult] = useState<null | {notified: number, message: string, shortlisted: any[]}>(null);
+  const [shortlistResult, setShortlistResult] = useState<null | {
+    notified: number;
+    message: string;
+    shortlisted: any[];
+  }>(null);
 
-  // UI state for tabs and job description
   const [activeTab, setActiveTab] = useState("overview");
   const [jobDescriptionExpanded, setJobDescriptionExpanded] = useState(false);
 
-  // RTK Query hooks
-  const [bulkUpload, { isLoading: isUploading }] = useBulkUploadCandidatesMutation();
-  const [shortlistBulk, { isLoading: isShortlisting }] = useShortlistBulkCandidatesMutation();
-  const { 
-    data: candidates, 
-    refetch: refetchCandidates, 
-    isLoading: candidatesLoading, 
+  const [bulkUpload, { isLoading: isUploading }] =
+    useBulkUploadCandidatesMutation();
+  const [shortlistBulk, { isLoading: isShortlisting }] =
+    useShortlistBulkCandidatesMutation();
+  const {
+    data: candidates,
+    refetch: refetchCandidates,
+    isLoading: candidatesLoading,
     error: candidatesError,
-    isSuccess: candidatesSuccess 
-  } = useGetCandidatesByTestQuery(
-    Number(testId!),
-    { skip: !testId }
-  );
+    isSuccess: candidatesSuccess,
+  } = useGetCandidatesByTestQuery(Number(testId!), { skip: !testId });
 
-function hasUnsavedChanges(formState, test) {
-  if (!formState || !test) return false;
-  const fields = [
-    'test_name',
-    'job_description',
-    'scheduled_at',
-    'time_limit_minutes',
-    'resume_score_threshold',
-    'max_shortlisted_candidates',
-    'auto_shortlist',
-    'total_questions',
-    'total_marks',
-    'application_deadline',
-    'assessment_deadline',
-    'text'
-  ];
-  for (let i = 0; i < fields.length; i++) {
-    const key = fields[i];
-    if (formState[key] !== (test[key] !== undefined ? test[key] : '')) {
-      return true;
+  function hasUnsavedChanges(formState, test) {
+    if (!formState || !test) return false;
+    const fields = [
+      "test_name",
+      "job_description",
+      "scheduled_at",
+      "time_limit_minutes",
+      "resume_score_threshold",
+      "max_shortlisted_candidates",
+      "auto_shortlist",
+      "total_questions",
+      "total_marks",
+      "application_deadline",
+      "assessment_deadline",
+      "text",
+    ];
+    for (let i = 0; i < fields.length; i++) {
+      const key = fields[i];
+      if (formState[key] !== (test[key] !== undefined ? test[key] : "")) {
+        return true;
+      }
     }
+    return false;
   }
-  return false;
-}
+  const {
+    data: test,
+    isLoading: testLoading,
+    error: testError,
+  } = useGetTestByIdQuery(Number(testId), { skip: !testId });
 
-// Fetch test data from API
-const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQuery(Number(testId), { skip: !testId });
-
-  // Unified test update state
   const [updateTest, { isLoading: isUpdatingTest }] = useUpdateTestMutation();
-  const [updateSkillGraph, { isLoading: isUpdatingSkillGraph }] = useUpdateSkillGraphMutation();
+  const [updateSkillGraph, { isLoading: isUpdatingSkillGraph }] =
+    useUpdateSkillGraphMutation();
   const [editMode, setEditMode] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
-  // Editable fields state
   const [formState, setFormState] = useState<any>(null);
-  // For slider
   const [sliderValues, setSliderValues] = useState<number[]>([33, 66]);
-  // Skill graph update feedback
-  const [skillGraphError, setSkillGraphError] = useState<string | null>(null);
-  const [skillGraphSuccess, setSkillGraphSuccess] = useState<string | null>(null);
-  // Handler for Update Skill Graph button
-  const handleUpdateSkillGraph = async () => {
-    setSkillGraphError(null);
-    setSkillGraphSuccess(null);
-    if (!testId || !formState) return;
-    const total = Number(formState.total_questions);
-    const lowPercent = sliderValues[0];
-    const mediumPercent = sliderValues[1] - sliderValues[0];
-    const highPercent = 100 - sliderValues[1];
-    // Calculate counts
-    let low = Math.round((lowPercent / 100) * total);
-    let medium = Math.round((mediumPercent / 100) * total);
-    let high = total - low - medium;
-    // Correction if rounding causes mismatch
-    const sum = low + medium + high;
-    if (sum !== total) {
-      // Adjust high to fix rounding error
-      high += (total - sum);
-    }
-    try {
-      await updateSkillGraph({
-        test_id: Number(testId),
-        total_questions: total,
-        low,
-        medium,
-        high
-      }).unwrap();
-      setSkillGraphSuccess('Skill graph updated successfully!');
-    } catch (e: any) {
-      setSkillGraphError(e?.data?.message || 'Failed to update skill graph');
-    }
-  };
 
   // Initialize form state from test data
   useEffect(() => {
     if (test) {
       setFormState({
-        test_name: test.test_name || '',
-        job_description: test.job_description || '',
-        scheduled_at: test.scheduled_at ? new Date(test.scheduled_at).toISOString().slice(0, 16) : '',
-        time_limit_minutes: test.time_limit_minutes || '',
-        resume_score_threshold: test.resume_score_threshold ?? '',
-        max_shortlisted_candidates: test.max_shortlisted_candidates ?? '',
+        test_name: test.test_name || "",
+        job_description: test.job_description || "",
+        scheduled_at: test.scheduled_at
+          ? new Date(test.scheduled_at).toISOString().slice(0, 16)
+          : "",
+        time_limit_minutes: test.time_limit_minutes || "",
+        resume_score_threshold: test.resume_score_threshold ?? "",
+        max_shortlisted_candidates: test.max_shortlisted_candidates ?? "",
         auto_shortlist: !!test.auto_shortlist,
         total_questions: test.total_questions || 0,
-        total_marks: test.total_marks || '',
-        application_deadline: test.application_deadline ? new Date(test.application_deadline).toISOString().slice(0, 16) : '',
-        assessment_deadline: test.assessment_deadline ? new Date(test.assessment_deadline).toISOString().slice(0, 16) : '',
-        // question_distribution: { low, medium, high }
-        question_distribution: test.parsed_job_description?.question_distribution || { low: 0, medium: 0, high: 0 },
+        total_marks: test.total_marks || "",
+        application_deadline: test.application_deadline
+          ? new Date(test.application_deadline).toISOString().slice(0, 16)
+          : "",
+        assessment_deadline: test.assessment_deadline
+          ? new Date(test.assessment_deadline).toISOString().slice(0, 16)
+          : "",
+        question_distribution: test.parsed_job_description
+          ?.question_distribution || { low: 0, medium: 0, high: 0 },
       });
-      // Set slider from distribution
-      const dist = test.parsed_job_description?.question_distribution || { low: 33, medium: 33, high: 34 };
+
+      const dist = test.parsed_job_description?.question_distribution || {
+        low: 33,
+        medium: 33,
+        high: 34,
+      };
       setSliderValues([dist.low, dist.low + dist.medium]);
     }
   }, [test]);
-
-  // Keep question_distribution in sync with slider
   useEffect(() => {
     if (!formState) return;
     const low = sliderValues[0];
     const medium = sliderValues[1] - sliderValues[0];
     const high = 100 - sliderValues[1];
-    // Calculate counts
     const l = Math.round((low / 100) * (formState.total_questions || 0));
     const m = Math.round((medium / 100) * (formState.total_questions || 0));
     const h = (formState.total_questions || 0) - l - m;
-    setFormState((prev: any) => ({ ...prev, question_distribution: { low: l, medium: m, high: h } }));
+    setFormState((prev: any) => ({
+      ...prev,
+      question_distribution: { low: l, medium: m, high: h },
+    }));
   }, [sliderValues, formState?.total_questions]);
 
-  // Handlers for form fields
   const handleFieldChange = (field: string, value: any) => {
     setFormState((prev: any) => ({ ...prev, [field]: value }));
-    if (field === 'total_questions') {
-      // Recalculate distribution
+    if (field === "total_questions") {
       const low = sliderValues[0];
       const medium = sliderValues[1] - sliderValues[0];
       const high = 100 - sliderValues[1];
       const l = Math.round((low / 100) * value);
       const m = Math.round((medium / 100) * value);
       const h = value - l - m;
-      setFormState((prev: any) => ({ ...prev, question_distribution: { low: l, medium: m, high: h } }));
+      setFormState((prev: any) => ({
+        ...prev,
+        question_distribution: { low: l, medium: m, high: h },
+      }));
     }
   };
 
   const [deleteTest] = useDeleteTestMutation();
-  // (Removed duplicate handleDeleteTest)
 
-
-  // Dialog state for viewing candidate result
   const [viewResultId, setViewResultId] = useState<number | null>(null);
   const handleViewResult = (applicationId: number) => {
     setViewResultId(applicationId);
@@ -262,52 +264,43 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
   const handleCloseResultDialog = () => {
     setViewResultId(null);
   };
-  const { data: candidateResult, isLoading: resultLoading, error: resultError } = useGetCandidateApplicationQuery(viewResultId ?? 0, { skip: !viewResultId });
+  const {
+    data: candidateResult,
+    isLoading: resultLoading,
+    error: resultError,
+  } = useGetCandidateApplicationQuery(viewResultId ?? 0, {
+    skip: !viewResultId,
+  });
 
   // Normalize candidates from API to a consistent structure for the table
   const normalizedCandidates = React.useMemo(() => {
     if (!candidates) return [];
     return candidates.map((c: any, idx: number) => ({
-      application_id: c['application_id'],
-      name: c['candidate_name'] || '',
-      email: c['candidate_email'] || '',
-      resume_link: c['resume_link'],
-      resume_score: c['resume_score'] ?? null,
-      is_shortlisted: c['is_shortlisted'],
-      screening_status: c['screening_status'] ?? null,
-      key: (c['candidate_email'] || '') + (c['resume_score'] ?? idx),
+      application_id: c["application_id"],
+      name: c["candidate_name"] || "",
+      email: c["candidate_email"] || "",
+      resume_link: c["resume_link"],
+      resume_score: c["resume_score"] ?? null,
+      is_shortlisted: c["is_shortlisted"],
+      screening_status: c["screening_status"] ?? null,
+      key: (c["candidate_email"] || "") + (c["resume_score"] ?? idx),
     }));
   }, [candidates]);
 
   // Sort normalized candidates by resume_score
   const sortedCandidates = React.useMemo(() => {
     return [...normalizedCandidates].sort((a, b) => {
-      if ((a.resume_score ?? null) === null && (b.resume_score ?? null) === null) return 0;
+      if (
+        (a.resume_score ?? null) === null &&
+        (b.resume_score ?? null) === null
+      )
+        return 0;
       if ((a.resume_score ?? null) === null) return 1;
       if ((b.resume_score ?? null) === null) return -1;
       return b.resume_score - a.resume_score;
     });
   }, [normalizedCandidates]);
 
-  // Debug logging for candidates query
-  useEffect(() => {
-    if (testId) {
-      console.log('TestPage - testId:', testId);
-      console.log('TestPage - candidates loading:', candidatesLoading);
-      console.log('TestPage - candidates error:', candidatesError);
-      console.log('TestPage - candidates data:', candidates);
-      console.log('TestPage - candidates success:', candidatesSuccess);
-    }
-  }, [testId, candidatesLoading, candidatesError, candidates, candidatesSuccess]);
-
-  // Log the test data to the console when it is loaded
-  useEffect(() => {
-    if (test) {
-      console.log('Fetched test data:', test);
-    }
-  }, [test]);
-
-  // Action handlers
   const handleEditTest = () => {
     if (testId) {
       navigate(`/recruiter/test/edit/${testId}`);
@@ -316,41 +309,29 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
 
   const handleDeleteTest = async () => {
     if (!testId || !test) return;
-
-    // Check if test is ongoing
     if (test.status === "ongoing" || test.status === "scheduled") {
-      alert("⚠️ Cannot Delete Test\n\nThis test is currently active and cannot be deleted. Please wait for the test to complete before attempting to delete it.");
+      alert(
+        "Cannot Delete Test\n\nThis test is currently active and cannot be deleted. Please wait for the test to complete before attempting to delete it."
+      );
       return;
     }
 
-    // Confirmation dialog
-    const confirmMessage = `🗑️ Delete Test Confirmation\n\nAre you sure you want to delete "${test.test_name}"?\n\nThis action cannot be undone and will permanently remove all associated data including:\n• Test questions and settings\n• Candidate submissions\n• Results and reports\n\nType "DELETE" to confirm.`;
-    
+    const confirmMessage = `Delete Test Confirmation\n\nAre you sure you want to delete "${test.test_name}"?\n\nThis action cannot be undone and will permanently remove all associated data including:\n• Test questions and settings\n• Candidate submissions\n• Results and reports\n\nType "DELETE" to confirm.`;
+
     const userInput = prompt(confirmMessage + "\n\nType 'DELETE' to confirm:");
-    
+
     if (userInput === "DELETE") {
       try {
-        // TODO: Implement deleteTest API call if available
         alert("Delete test API not implemented. Please contact the developer.");
-        alert("✅ Test deleted successfully!");
+        alert("Test deleted successfully!");
         navigate("/recruiter/tests"); // Navigate back to tests list
       } catch (error) {
         console.error("Failed to delete test:", error);
-        alert("❌ Failed to delete test. Please try again.");
+        alert("Failed to delete test. Please try again.");
       }
     } else if (userInput !== null) {
-      alert("❌ Deletion cancelled. You must type 'DELETE' exactly to confirm.");
+      alert("Deletion cancelled. You must type 'DELETE' exactly to confirm.");
     }
-  };
-
-  const handleStartTest = () => {
-    // TODO: Implement start test functionality
-    alert("🚀 Start Test feature coming soon!");
-  };
-
-  const handleExportResults = () => {
-    // TODO: Implement export functionality
-    alert("📊 Export Results feature coming soon!");
   };
 
   const handleShortlistBulk = async () => {
@@ -358,29 +339,51 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
     setShortlistResult(null);
     setAssessmentResult(null);
     try {
-      const result = await shortlistBulk({ test_id: Number(testId), min_score: minScore }).unwrap();
+      const result = await shortlistBulk({
+        test_id: Number(testId),
+        min_score: minScore,
+      }).unwrap();
       setShortlistResult(result);
-      if (result && result.message && result.message.toLowerCase().includes("shortlisted") && result.message.toLowerCase().includes("notified")) {
+      if (
+        result &&
+        result.message &&
+        result.message.toLowerCase().includes("shortlisted") &&
+        result.message.toLowerCase().includes("notified")
+      ) {
         toast(`✅ ${result.message}`);
       }
-      // Immediately call assessment creation API
       try {
         await axios.post(`/tests/${testId}/shortlisted/assessments`);
-        setAssessmentResult({ success: true, message: "Assessment records created for all shortlisted candidates." });
+        setAssessmentResult({
+          success: true,
+          message: "Assessment records created for all shortlisted candidates.",
+        });
       } catch (err2: any) {
-        setAssessmentResult({ success: false, message: err2?.response?.data?.message });
+        setAssessmentResult({
+          success: false,
+          message: err2?.response?.data?.message,
+        });
       }
       refetchCandidates();
     } catch (err: any) {
-      setShortlistResult({ notified: 0, message: err?.data?.message || "Shortlisting failed", shortlisted: [] });
-      setAssessmentResult({ success: false, message: err?.data?.message || "Shortlisting failed" });
+      setShortlistResult({
+        notified: 0,
+        message: err?.data?.message || "Shortlisting failed",
+        shortlisted: [],
+      });
+      setAssessmentResult({
+        success: false,
+        message: err?.data?.message || "Shortlisting failed",
+      });
     }
   };
 
-  // Handler for deleting a candidate application
-  const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] =
+    useDeleteCandidateMutation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(null);
+  const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(
+    null
+  );
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -400,31 +403,36 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
       setDeleteCandidateId(null);
       refetchCandidates();
     } catch (error: any) {
-      setDeleteError(error?.data?.message || "Failed to delete candidate application.");
+      setDeleteError(
+        error?.data?.message || "Failed to delete candidate application."
+      );
     }
   };
 
-
-  // Helper for status badge (supports all statuses with distinct colors)
   const getStatusBadge = (status: string) => {
-    // Map status to color and label
     const statusConfig: Record<string, { color: string; label: string }> = {
-      draft: { color: 'bg-gray-200 text-gray-800', label: 'Draft' },
-      scheduled: { color: 'bg-blue-100 text-blue-800', label: 'Scheduled' },
-      ongoing: { color: 'bg-yellow-100 text-yellow-800', label: 'Ongoing' },
-      completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
-      ended: { color: 'bg-red-100 text-red-800', label: 'Ended' },
-      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
+      draft: { color: "bg-gray-200 text-gray-800", label: "Draft" },
+      scheduled: { color: "bg-blue-100 text-blue-800", label: "Scheduled" },
+      ongoing: { color: "bg-yellow-100 text-yellow-800", label: "Ongoing" },
+      completed: { color: "bg-green-100 text-green-800", label: "Completed" },
+      ended: { color: "bg-red-100 text-red-800", label: "Ended" },
+      active: { color: "bg-green-100 text-green-800", label: "Active" },
       // fallback
-      default: { color: 'bg-gray-200 text-gray-800', label: status.charAt(0).toUpperCase() + status.slice(1) },
+      default: {
+        color: "bg-gray-200 text-gray-800",
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+      },
     };
-    const config = statusConfig[status] || statusConfig['default'];
+    const config = statusConfig[status] || statusConfig["default"];
     return (
-      <span className={`px-2 py-1 rounded text-xs font-semibold ${config.color}`}>{config.label}</span>
+      <span
+        className={`px-2 py-1 rounded text-xs font-semibold ${config.color}`}
+      >
+        {config.label}
+      </span>
     );
   };
 
-  // Helper for date formatting
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -440,21 +448,23 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
     const file = event.target.files?.[0];
     if (!file || !testId) return;
 
-    console.log('File selected:', file.name, file.type, file.size);
-    
+    console.log("File selected:", file.name, file.type, file.size);
+
     setErrors([]);
     setWarnings([]);
     setParsedData(null);
     setUploadStatus("idle");
-    
+
     // Validate file type
     if (!validateFileType(file)) {
-      setErrors(['Please select a valid Excel file (.xlsx, .xls) or CSV file (.csv)']);
+      setErrors([
+        "Please select a valid Excel file (.xlsx, .xls) or CSV file (.csv)",
+      ]);
       return;
     }
 
     setUploadedFile(file);
-    console.log('File ready for upload:', file.name);
+    console.log("File ready for upload:", file.name);
   };
 
   const handleProcessAndUpload = async () => {
@@ -467,11 +477,11 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
       setWarnings([]);
       setIsParsing(true);
 
-      console.log('Starting file parsing and upload for test ID:', testId);
-      
+      console.log("Starting file parsing and upload for test ID:", testId);
+
       // First, parse the file
       const result = await parseExcelFile(uploadedFile);
-      
+
       if (!result.validation.valid) {
         setErrors(result.validation.errors);
         setWarnings(result.validation.warnings);
@@ -479,35 +489,35 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
         setIsParsing(false);
         return;
       }
-      
+
       setParsedData(result.data);
       setWarnings(result.validation.warnings);
       setIsParsing(false);
 
       // Show progress simulation for upload
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
-      
+
       // Add test_id from URL to each application
-      const applicationsWithTestId = result.data.map(candidate => ({
+      const applicationsWithTestId = result.data.map((candidate) => ({
         ...candidate,
-        test_id: Number(testId)
+        test_id: Number(testId),
       }));
-      
-      console.log('Upload data:', { applications: applicationsWithTestId });
-      console.log('Sending to URL:', '/candidate-application/bulk');
-      console.log('Test ID:', testId);
-      console.log('Applications with test ID:', applicationsWithTestId);
+
+      console.log("Upload data:", { applications: applicationsWithTestId });
+      console.log("Sending to URL:", "/candidate-application/bulk");
+      console.log("Test ID:", testId);
+      console.log("Applications with test ID:", applicationsWithTestId);
 
       const uploadResult = await bulkUpload({
-        applications: applicationsWithTestId
+        applications: applicationsWithTestId,
       }).unwrap();
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      console.log('Upload result:', uploadResult);
+      console.log("Upload result:", uploadResult);
 
       // Reset form and refetch data
       setUploadedFile(null);
@@ -516,26 +526,39 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
       setUploadStatus("success");
       // Reset file input so user can re-upload the same file
       if (fileInputRef.current) fileInputRef.current.value = "";
-      
+
       // Refetch candidates to update the table
       refetchCandidates();
 
       // Show success message with details
-      const successMsg = `Successfully uploaded ${uploadResult.success || uploadResult.results?.filter(r => r.status === 'success').length} candidates`;
-      const failedCount = uploadResult.failed || uploadResult.results?.filter(r => r.status === 'error').length;
+      const successMsg = `Successfully uploaded ${
+        uploadResult.success ||
+        uploadResult.results?.filter((r) => r.status === "success").length
+      } candidates`;
+      const failedCount =
+        uploadResult.failed ||
+        uploadResult.results?.filter((r) => r.status === "error").length;
 
       if (failedCount > 0) {
-        toast(`❌ ${successMsg}. ${failedCount} failed. Some candidates could not be uploaded.`);
+        toast(
+          `❌ ${successMsg}. ${failedCount} failed. Some candidates could not be uploaded.`
+        );
       } else {
         toast(successMsg);
       }
-      
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       setUploadProgress(0);
       setIsParsing(false);
       setUploadStatus("error");
-      setErrors([`Upload failed: ${error?.data?.detail || error?.data?.message || error.message || 'Unknown error'}`]);
+      setErrors([
+        `Upload failed: ${
+          error?.data?.detail ||
+          error?.data?.message ||
+          error.message ||
+          "Unknown error"
+        }`,
+      ]);
     }
   };
 
@@ -543,16 +566,14 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
     downloadSampleTemplate();
   };
 
-
   // Move hooks to top level to avoid conditional hook calls
   // Loading and error UI will be handled below in the render
 
-
   // --- Scheduling State ---
   const [scheduleState, setScheduleState] = useState({
-    scheduled_at: '',
-    application_deadline: '',
-    assessment_deadline: '',
+    scheduled_at: "",
+    application_deadline: "",
+    assessment_deadline: "",
   });
 
   const [scheduleTest, { isLoading: isScheduling }] = useScheduleTestMutation();
@@ -562,49 +583,54 @@ const { data: test, isLoading: testLoading, error: testError } = useGetTestByIdQ
 
   // Schedule handler
   const handleSchedule = async () => {
-    setUpdateError(null); setUpdateSuccess(null);
+    setUpdateError(null);
+    setUpdateSuccess(null);
     if (!testId) return;
     try {
-      const { scheduled_at, application_deadline, assessment_deadline } = scheduleState;
+      const { scheduled_at, application_deadline, assessment_deadline } =
+        scheduleState;
       const payload: any = {};
       if (scheduled_at) payload.scheduled_at = scheduled_at;
-      if (application_deadline) payload.application_deadline = application_deadline;
-      if (assessment_deadline) payload.assessment_deadline = assessment_deadline;
-      console.log('[ScheduleTest] Sending payload:', payload);
+      if (application_deadline)
+        payload.application_deadline = application_deadline;
+      if (assessment_deadline)
+        payload.assessment_deadline = assessment_deadline;
+      console.log("[ScheduleTest] Sending payload:", payload);
       await scheduleTest({ testId: Number(testId), data: payload }).unwrap();
-      setUpdateSuccess('Test scheduled successfully!');
+      setUpdateSuccess("Test scheduled successfully!");
     } catch (e: any) {
-      setUpdateError(e?.data?.message || 'Failed to schedule test');
+      setUpdateError(e?.data?.message || "Failed to schedule test");
     }
   };
 
+  useEffect(() => {
+    if (uploadStatus === "success" && !isParsing && !isUploading) {
+      toast("Candidates uploaded successfully!");
+    } else if (uploadStatus === "error" && !isParsing && !isUploading) {
+      toast("Error uploading candidates.");
+    }
+  }, [uploadStatus, isParsing, isUploading]);
 
-useEffect(() => {
-  if (uploadStatus === "success" && !isParsing && !isUploading) {
-    toast("Candidates uploaded successfully!");
-  } else if (uploadStatus === "error" && !isParsing && !isUploading) {
-    toast("Error uploading candidates.");
-  }
-}, [uploadStatus, isParsing, isUploading]);
-
-if (testLoading) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin" />
-    </div>
-  );
-}
-
-if (testError || !test) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Test not found</h2>
-        <p className="text-muted-foreground">The test you're looking for doesn't exist.</p>
+  if (testLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    </div>
-  );
-}
+    );
+  }
+
+  if (testError || !test) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Test not found</h2>
+          <p className="text-muted-foreground">
+            The test you're looking for doesn't exist.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -631,44 +657,20 @@ if (testError || !test) {
             </div>
             <div className="flex items-center gap-2">
               {getStatusBadge(test.status)}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Actions
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem 
-                    onClick={handleEditTest}
-                    className="cursor-pointer hover:bg-accent"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Test
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleStartTest}
-                    className="cursor-pointer hover:bg-accent"
-                  >
-                    <PlayCircle className="h-4 w-4 mr-2" />
-                    Start Test
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleExportResults}
-                    className="cursor-pointer hover:bg-accent"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Results
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="text-red-600 focus:text-red-600 cursor-pointer hover:bg-red-50" 
-                    onClick={handleDeleteTest}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Test
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div>
+                {
+                  <Link to={`/recruiter/test/${testId}/report`}>
+                    <Button
+                      variant={"outline"}
+                      size={"sm"}
+                      className="cursor-pointer"
+                    >
+                      <FileText />
+                      View Report
+                    </Button>
+                  </Link>
+                }
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -679,7 +681,9 @@ if (testError || !test) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setJobDescriptionExpanded(!jobDescriptionExpanded)}
+                onClick={() =>
+                  setJobDescriptionExpanded(!jobDescriptionExpanded)
+                }
               >
                 {jobDescriptionExpanded ? (
                   <ChevronUp className="h-4 w-4" />
@@ -688,7 +692,11 @@ if (testError || !test) {
                 )}
               </Button>
             </div>
-            <div className={`text-sm text-muted-foreground ${jobDescriptionExpanded ? "" : "line-clamp-3"}`}>
+            <div
+              className={`text-sm text-muted-foreground ${
+                jobDescriptionExpanded ? "" : "line-clamp-3"
+              }`}
+            >
               {test.job_description}
             </div>
           </div>
@@ -727,27 +735,43 @@ if (testError || !test) {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Test Created</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    Test Created
+                  </span>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Resume Parsing</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    Resume Parsing
+                  </span>
                   <div className="flex items-center gap-1">
                     {(() => {
                       const total = candidates?.length || 0;
-                      const completed = candidates?.filter(c => c.screening_status === 'completed').length || 0;
-                      const pending = candidates?.filter(c => c.screening_status === 'pending').length || 0;
+                      const completed =
+                        candidates?.filter(
+                          (c) => c.screening_status === "completed"
+                        ).length || 0;
+                      const pending =
+                        candidates?.filter(
+                          (c) => c.screening_status === "pending"
+                        ).length || 0;
                       return (
                         <>
-                          <span className="text-xs text-blue-700 dark:text-blue-200">{completed}/{total}</span>
-                          {pending > 0 && <Loader2 className="h-4 w-4 text-blue-500 animate-spin ml-1" />}
+                          <span className="text-xs text-blue-700 dark:text-blue-200">
+                            {completed}/{total}
+                          </span>
+                          {pending > 0 && (
+                            <Loader2 className="h-4 w-4 text-blue-500 animate-spin ml-1" />
+                          )}
                         </>
                       );
                     })()}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Graph Generation</span>
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    Graph Generation
+                  </span>
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </div>
               </CardContent>
@@ -760,16 +784,28 @@ if (testError || !test) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-extrabold text-purple-900 dark:text-purple-100">{candidates?.length || 0}</div>
-                <p className="text-sm text-purple-700 dark:text-purple-200">Total candidates</p>
+                <div className="text-2xl font-extrabold text-purple-900 dark:text-purple-100">
+                  {candidates?.length || 0}
+                </div>
+                <p className="text-sm text-purple-700 dark:text-purple-200">
+                  Total candidates
+                </p>
                 <div className="mt-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">Completed:</span>
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">{candidates?.filter(c => c.score !== null).length || 0}</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">
+                      Completed:
+                    </span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">
+                      {candidates?.filter((c) => c.score !== null).length || 0}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">Shortlisted:</span>
-                    <span className="font-semibold text-purple-800 dark:text-purple-200">{candidates?.filter(c => c.is_shortlisted).length || 0}</span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">
+                      Shortlisted:
+                    </span>
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">
+                      {candidates?.filter((c) => c.is_shortlisted).length || 0}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -783,24 +819,47 @@ if (testError || !test) {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-extrabold text-green-900 dark:text-green-100">
-                  {candidates && candidates.filter(c => c.score !== null).length > 0
+                  {candidates &&
+                  candidates.filter((c) => c.score !== null).length > 0
                     ? Math.round(
                         candidates
-                          .filter(c => c.score !== null)
+                          .filter((c) => c.score !== null)
                           .reduce((acc, c) => acc + c.score!, 0) /
-                        candidates.filter(c => c.score !== null).length
+                          candidates.filter((c) => c.score !== null).length
                       )
-                    : 0}%
+                    : 0}
+                  %
                 </div>
-                <p className="text-sm text-green-700 dark:text-green-200">Average score</p>
+                <p className="text-sm text-green-700 dark:text-green-200">
+                  Average score
+                </p>
                 <div className="mt-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="font-semibold text-green-800 dark:text-green-200">Highest:</span>
-                    <span className="font-semibold text-green-800 dark:text-green-200">{candidates && candidates.length > 0 ? Math.max(...candidates.map(c => c.score || 0)) : 0}%</span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">
+                      Highest:
+                    </span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">
+                      {candidates && candidates.length > 0
+                        ? Math.max(...candidates.map((c) => c.score || 0))
+                        : 0}
+                      %
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-semibold text-green-800 dark:text-green-200">Lowest:</span>
-                    <span className="font-semibold text-green-800 dark:text-green-200">{candidates && candidates.filter(c => c.score !== null).length > 0 ? Math.min(...candidates.filter(c => c.score !== null).map(c => c.score!)) : 0}%</span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">
+                      Lowest:
+                    </span>
+                    <span className="font-semibold text-green-800 dark:text-green-200">
+                      {candidates &&
+                      candidates.filter((c) => c.score !== null).length > 0
+                        ? Math.min(
+                            ...candidates
+                              .filter((c) => c.score !== null)
+                              .map((c) => c.score!)
+                          )
+                        : 0}
+                      %
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -814,12 +873,23 @@ if (testError || !test) {
             <CardHeader>
               <CardTitle>Upload Candidates</CardTitle>
               <CardDescription>
-                Upload an Excel or CSV file with candidate information (max 100 rows)
+                Upload an Excel or CSV file with candidate information (max 100
+                rows)
                 {uploadedFile && (
-                  <><br /><span className="text-green-600">Selected: {uploadedFile.name}</span></>
+                  <>
+                    <br />
+                    <span className="text-green-600">
+                      Selected: {uploadedFile.name}
+                    </span>
+                  </>
                 )}
                 {parsedData && (
-                  <><br /><span className="text-blue-600">Parsed {parsedData.length} candidates successfully</span></>
+                  <>
+                    <br />
+                    <span className="text-blue-600">
+                      Parsed {parsedData.length} candidates successfully
+                    </span>
+                  </>
                 )}
               </CardDescription>
             </CardHeader>
@@ -834,7 +904,11 @@ if (testError || !test) {
                     disabled={isParsing || isUploading}
                     ref={fileInputRef}
                   />
-                  <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadTemplate}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Template
                   </Button>
@@ -844,13 +918,17 @@ if (testError || !test) {
                 {uploadedFile && (
                   <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg border">
                     <div>
-                      <p className="text-sm font-medium">Ready to upload: {uploadedFile.name}</p>
+                      <p className="text-sm font-medium">
+                        Ready to upload: {uploadedFile.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {parsedData ? `${parsedData.length} candidates parsed` : 'Click to parse and upload'}
+                        {parsedData
+                          ? `${parsedData.length} candidates parsed`
+                          : "Click to parse and upload"}
                       </p>
                     </div>
-                    <Button 
-                      onClick={handleProcessAndUpload} 
+                    <Button
+                      onClick={handleProcessAndUpload}
                       disabled={isParsing || isUploading}
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -867,32 +945,33 @@ if (testError || !test) {
                       ) : (
                         <>
                           <Upload className="mr-2 h-4 w-4" />
-                          {parsedData ? `Upload ${parsedData.length} Candidates` : 'Parse & Upload'}
+                          {parsedData
+                            ? `Upload ${parsedData.length} Candidates`
+                            : "Parse & Upload"}
                         </>
                       )}
-          </Button>
+                    </Button>
                   </div>
                 )}
-                
+
                 {(isParsing || isUploading) && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {isParsing ? 'Parsing file...' : 'Uploading candidates...'}
+                    {isParsing ? "Parsing file..." : "Uploading candidates..."}
                     {uploadProgress > 0 && <span>({uploadProgress}%)</span>}
                   </div>
                 )}
-                
 
-  {errors.length > 0 && (
-    <div className="flex items-center gap-2 text-sm text-red-600">
-      <XCircle className="h-4 w-4" />
-      <div>
-        {errors.map((error, index) => (
-          <div key={index}>{error}</div>
-        ))}
-      </div>
-    </div>
-  )}
+                {errors.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <XCircle className="h-4 w-4" />
+                    <div>
+                      {errors.map((error, index) => (
+                        <div key={index}>{error}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {warnings.length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-yellow-600">
@@ -913,7 +992,9 @@ if (testError || !test) {
             <CardHeader>
               <CardTitle>Manual Shortlisting</CardTitle>
               <CardDescription>
-                Select a minimum resume score to shortlist candidates for assessment. All candidates with a score above or equal to this threshold will be shortlisted and notified.
+                Select a minimum resume score to shortlist candidates for
+                assessment. All candidates with a score above or equal to this
+                threshold will be shortlisted and notified.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col md:flex-row items-center gap-4">
@@ -925,7 +1006,7 @@ if (testError || !test) {
                   min={0}
                   max={100}
                   value={minScore}
-                  onChange={e => setMinScore(Number(e.target.value))}
+                  onChange={(e) => setMinScore(Number(e.target.value))}
                   className="w-24"
                 />
               </div>
@@ -934,7 +1015,9 @@ if (testError || !test) {
                 disabled={isShortlisting || !testId}
                 className="ml-0 md:ml-4"
               >
-                {isShortlisting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {isShortlisting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
                 Shortlist Candidates
               </Button>
               {/* Send Invitation Button (UI only) */}
@@ -944,16 +1027,30 @@ if (testError || !test) {
                 onClick={async () => {
                   setAssessmentResult(null);
                   try {
-                    const res = await bulkAddAssessments(Number(testId)).unwrap();
-                    setAssessmentResult({ success: true, message: res.message });
+                    const res = await bulkAddAssessments(
+                      Number(testId)
+                    ).unwrap();
+                    setAssessmentResult({
+                      success: true,
+                      message: res.message,
+                    });
                   } catch (err: any) {
-                    setAssessmentResult({ success: false, message: err?.data?.message});
+                    setAssessmentResult({
+                      success: false,
+                      message: err?.data?.message,
+                    });
                   }
                   refetchCandidates();
                 }}
-                disabled={isBulkAddingAssessments || normalizedCandidates.filter(c => c.is_shortlisted).length === 0}
+                disabled={
+                  isBulkAddingAssessments ||
+                  normalizedCandidates.filter((c) => c.is_shortlisted)
+                    .length === 0
+                }
               >
-                {isBulkAddingAssessments ? "Adding..." : "Add them to assessment list"}
+                {isBulkAddingAssessments
+                  ? "Adding..."
+                  : "Add them to assessment list"}
               </Button>
               {shortlistResult && (
                 <div className="ml-0 md:ml-4 text-green-700 text-sm">
@@ -962,13 +1059,23 @@ if (testError || !test) {
               )}
               {/* Assessment creation feedback */}
               {assessmentResult && (
-                <div className={`ml-0 md:ml-4 text-sm ${assessmentResult.success ? "text-green-700" : "text-red-700"}`}>
+                <div
+                  className={`ml-0 md:ml-4 text-sm ${
+                    assessmentResult.success ? "text-green-700" : "text-red-700"
+                  }`}
+                >
                   {assessmentResult.message}
                 </div>
               )}
               {/* Single shortlist feedback (toast style) */}
               {singleShortlistResult && (
-                <div className={`ml-0 md:ml-4 text-sm ${singleShortlistResult.success ? "text-green-700" : "text-red-700"}`}>
+                <div
+                  className={`ml-0 md:ml-4 text-sm ${
+                    singleShortlistResult.success
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }`}
+                >
                   {singleShortlistResult.message}
                 </div>
               )}
@@ -979,18 +1086,23 @@ if (testError || !test) {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Candidate List
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => refetchCandidates()}
                   disabled={candidatesLoading}
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${candidatesLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${
+                      candidatesLoading ? "animate-spin" : ""
+                    }`}
+                  />
                   Refresh
                 </Button>
               </CardTitle>
               <CardDescription>
-                Manage candidates for this test ({sortedCandidates?.length || 0} total)
+                Manage candidates for this test ({sortedCandidates?.length || 0}{" "}
+                total)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1002,10 +1114,12 @@ if (testError || !test) {
               ) : candidatesError ? (
                 <div className="flex items-center justify-center py-8 text-red-600">
                   <XCircle className="h-6 w-6" />
-                  <span className="ml-2">Failed to load candidates. Please try refreshing the page.</span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <span className="ml-2">
+                    Failed to load candidates. Please try refreshing the page.
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => refetchCandidates()}
                     className="ml-4"
                   >
@@ -1032,13 +1146,19 @@ if (testError || !test) {
                       <TableRow key={candidate.key}>
                         <TableCell className="font-medium">
                           <div className="flex items-center">
-                            {candidate.resume_score !== null && candidate.resume_score !== undefined ? (
-                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
-                                index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                                index === 1 ? 'bg-gray-100 text-gray-800' :
-                                index === 2 ? 'bg-orange-100 text-orange-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
+                            {candidate.resume_score !== null &&
+                            candidate.resume_score !== undefined ? (
+                              <span
+                                className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                                  index === 0
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : index === 1
+                                    ? "bg-gray-100 text-gray-800"
+                                    : index === 2
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }`}
+                              >
                                 {index + 1}
                               </span>
                             ) : (
@@ -1048,12 +1168,14 @@ if (testError || !test) {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">{candidate.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {candidate.name}
+                        </TableCell>
                         <TableCell>{candidate.email}</TableCell>
                         <TableCell>
-                          <a 
-                            href={candidate.resume_link} 
-                            target="_blank" 
+                          <a
+                            href={candidate.resume_link}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline text-sm"
                           >
@@ -1061,13 +1183,19 @@ if (testError || !test) {
                           </a>
                         </TableCell>
                         <TableCell>
-                          {candidate.resume_score !== null && candidate.resume_score !== undefined ? (
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              candidate.resume_score >= 80 ? 'bg-green-100 text-green-800' :
-                              candidate.resume_score >= 60 ? 'bg-blue-100 text-blue-800' :
-                              candidate.resume_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                          {candidate.resume_score !== null &&
+                          candidate.resume_score !== undefined ? (
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                candidate.resume_score >= 80
+                                  ? "bg-green-100 text-green-800"
+                                  : candidate.resume_score >= 60
+                                  ? "bg-blue-100 text-blue-800"
+                                  : candidate.resume_score >= 40
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
                               {candidate.resume_score}%
                             </span>
                           ) : (
@@ -1088,14 +1216,22 @@ if (testError || !test) {
                           )}
                         </TableCell>
                         <TableCell>
-                          {candidate.screening_status === 'completed' ? (
-                            <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">Completed</span>
-                          ) : candidate.screening_status === 'pending' ? (
-                            <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">Pending</span>
-                          ) : candidate.screening_status === 'failed' ? (
-                            <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Failed</span>
+                          {candidate.screening_status === "completed" ? (
+                            <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                              Completed
+                            </span>
+                          ) : candidate.screening_status === "pending" ? (
+                            <span className="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">
+                              Pending
+                            </span>
+                          ) : candidate.screening_status === "failed" ? (
+                            <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">
+                              Failed
+                            </span>
                           ) : (
-                            <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">N/A</span>
+                            <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
+                              N/A
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -1106,21 +1242,43 @@ if (testError || !test) {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => handleShortlistSingle(candidate.application_id)} disabled={isShortlistingSingle}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleShortlistSingle(
+                                    candidate.application_id
+                                  )
+                                }
+                                disabled={isShortlistingSingle}
+                              >
                                 <Mail className="h-4 w-4 mr-2" />
-                                {isShortlistingSingle ? "Shortlisting..." : "Shortlist & Send Invite"}
+                                {isShortlistingSingle
+                                  ? "Shortlisting..."
+                                  : "Shortlist & Send Invite"}
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Download className="h-4 w-4 mr-2" />
                                 Download Resume
                               </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleViewResult(candidate.application_id)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Results
-                        </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteCandidate(candidate.application_id, candidate)} disabled={isDeletingCandidate}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleViewResult(candidate.application_id)
+                                }
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Results
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() =>
+                                  handleDeleteCandidate(
+                                    candidate.application_id,
+                                    candidate
+                                  )
+                                }
+                                disabled={isDeletingCandidate}
+                              >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                {isDeletingCandidate ? 'Removing...' : 'Remove'}
+                                {isDeletingCandidate ? "Removing..." : "Remove"}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1133,7 +1291,9 @@ if (testError || !test) {
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No candidates uploaded yet</p>
-                  <p className="text-sm">Upload an Excel file to add candidates</p>
+                  <p className="text-sm">
+                    Upload an Excel file to add candidates
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -1151,14 +1311,21 @@ if (testError || !test) {
             </CardHeader>
             <CardContent>
               <div className="mt-8">
-                {test && test.skill_graph && test.skill_graph.root_nodes && test.skill_graph.root_nodes.length > 0 ? (
+                {test &&
+                test.skill_graph &&
+                test.skill_graph.root_nodes &&
+                test.skill_graph.root_nodes.length > 0 ? (
                   <SkillTreeGraph root_nodes={test.skill_graph.root_nodes} />
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Network className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Skill Graph Data</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No Skill Graph Data
+                    </h3>
                     <p className="text-muted-foreground mb-4">
-                      No skill graph data is available for this test. Please check if the skill graph has been generated or try again later.
+                      No skill graph data is available for this test. Please
+                      check if the skill graph has been generated or try again
+                      later.
                     </p>
                   </div>
                 )}
@@ -1171,47 +1338,86 @@ if (testError || !test) {
         <TabsContent value="settings" className="space-y-6">
           {/* Scheduling Section */}
           <Card>
-          <CardHeader>
-            <CardTitle>Schedule Test</CardTitle>
-            <CardDescription>Set the start time and duration. End time is auto-calculated.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Show current scheduled test time if available */}
-            {test?.scheduled_at && (
-              <div className="mb-2">
-                <span className="font-medium">Current Scheduled Test Start:&nbsp;</span>
-                <span className="text-blue-700">{formatDate(test.scheduled_at)}</span>
+            <CardHeader>
+              <CardTitle>Schedule Test</CardTitle>
+              <CardDescription>
+                Set the start time and duration. End time is auto-calculated.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Show current scheduled test time if available */}
+              {test?.scheduled_at && (
+                <div className="mb-2">
+                  <span className="font-medium">
+                    Current Scheduled Test Start:&nbsp;
+                  </span>
+                  <span className="text-blue-700">
+                    {formatDate(test.scheduled_at)}
+                  </span>
+                </div>
+              )}
+              {test?.assessment_deadline && (
+                <div className="mb-2">
+                  <span className="font-medium">
+                    Current Assessment End:&nbsp;
+                  </span>
+                  <span className="text-blue-700">
+                    {formatDate(test.assessment_deadline)}
+                  </span>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="scheduledAt">Scheduled At</Label>
+                <Input
+                  id="scheduledAt"
+                  type="datetime-local"
+                  value={scheduleState.scheduled_at}
+                  onChange={(e) =>
+                    setScheduleState((prev) => ({
+                      ...prev,
+                      scheduled_at: e.target.value,
+                    }))
+                  }
+                  className="max-w-md"
+                />
               </div>
-            )}
-            {test?.assessment_deadline && (
-              <div className="mb-2">
-                <span className="font-medium">Current Assessment End:&nbsp;</span>
-                <span className="text-blue-700">{formatDate(test.assessment_deadline)}</span>
+              <div className="space-y-2">
+                <Label>Assessment End Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={scheduleState.assessment_deadline}
+                  onChange={(e) =>
+                    setScheduleState((prev) => ({
+                      ...prev,
+                      assessment_deadline: e.target.value,
+                    }))
+                  }
+                  className="max-w-md"
+                />
               </div>
-            )}
-            <div className="space-y-2"> 
-              <Label htmlFor="scheduledAt">Scheduled At</Label>
-              <Input id="scheduledAt" type="datetime-local" value={scheduleState.scheduled_at} onChange={e => setScheduleState(prev => ({ ...prev, scheduled_at: e.target.value }))} className="max-w-md" />
-            </div>
-            <div className="space-y-2">
-              <Label>Assessment End Time</Label>
-              <Input type="datetime-local" value={scheduleState.assessment_deadline} onChange={e => setScheduleState(prev => ({ ...prev, assessment_deadline: e.target.value }))} className="max-w-md" />
-            </div>
-            <div className="flex gap-4 pt-4">
-              <Button onClick={handleSchedule} disabled={isScheduling}>
-                {isScheduling ? 'Scheduling...' : 'Schedule'}
-              </Button>
-            </div>
-            {updateError && <div className="text-red-600 text-sm mt-2">{updateError}</div>}
-            {updateSuccess && <div className="text-green-600 text-sm mt-2">{updateSuccess}</div>}
-          </CardContent>
+              <div className="flex gap-4 pt-4">
+                <Button onClick={handleSchedule} disabled={isScheduling}>
+                  {isScheduling ? "Scheduling..." : "Schedule"}
+                </Button>
+              </div>
+              {updateError && (
+                <div className="text-red-600 text-sm mt-2">{updateError}</div>
+              )}
+              {updateSuccess && (
+                <div className="text-green-600 text-sm mt-2">
+                  {updateSuccess}
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           {/* Update Test Section */}
           <Card>
             <CardHeader>
               <CardTitle>Test Settings</CardTitle>
-              <CardDescription>Configure test parameters and preferences</CardDescription>
+              <CardDescription>
+                Configure test parameters and preferences
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {formState && (
@@ -1233,11 +1439,26 @@ if (testError || !test) {
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="testName">Test Name</Label>
-                    <Input id="testName" value={formState.test_name} onChange={e => handleFieldChange('test_name', e.target.value)} className="max-w-md" />
+                    <Input
+                      id="testName"
+                      value={formState.test_name}
+                      onChange={(e) =>
+                        handleFieldChange("test_name", e.target.value)
+                      }
+                      className="max-w-md"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="jobDesc">Job Description</Label>
-                    <Textarea id="jobDesc" value={formState.job_description} onChange={e => handleFieldChange('job_description', e.target.value)} rows={4} className="max-w-2xl" />
+                    <Textarea
+                      id="jobDesc"
+                      value={formState.job_description}
+                      onChange={(e) =>
+                        handleFieldChange("job_description", e.target.value)
+                      }
+                      rows={4}
+                      className="max-w-2xl"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
@@ -1248,8 +1469,13 @@ if (testError || !test) {
                   <div className="space-y-2">
                     <Label>Resume Score Threshold</Label>
                     <Input
-                      value={formState.resume_score_threshold ?? ''}
-                      onChange={e => handleFieldChange('resume_score_threshold', e.target.value)}
+                      value={formState.resume_score_threshold ?? ""}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          "resume_score_threshold",
+                          e.target.value
+                        )
+                      }
                       className="max-w-md"
                       disabled={!formState.auto_shortlist}
                     />
@@ -1257,27 +1483,39 @@ if (testError || !test) {
                   <div className="space-y-2">
                     <Label>Max Shortlisted Candidates</Label>
                     <Input
-                      value={formState.max_shortlisted_candidates ?? ''}
-                      onChange={e => handleFieldChange('max_shortlisted_candidates', e.target.value)}
+                      value={formState.max_shortlisted_candidates ?? ""}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          "max_shortlisted_candidates",
+                          e.target.value
+                        )
+                      }
                       className="max-w-md"
                       disabled={!formState.auto_shortlist}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="auto-shortlist-toggle">Auto Shortlist</Label>
+                    <Label htmlFor="auto-shortlist-toggle">
+                      Auto Shortlist
+                    </Label>
                     <div className="flex items-center gap-3">
                       <Switch
                         id="auto-shortlist-toggle"
                         checked={!!formState.auto_shortlist}
                         onCheckedChange={(checked: boolean) => {
-                          handleFieldChange('auto_shortlist', checked);
+                          handleFieldChange("auto_shortlist", checked);
                           if (!checked) {
-                            handleFieldChange('resume_score_threshold', null);
-                            handleFieldChange('max_shortlisted_candidates', null);
+                            handleFieldChange("resume_score_threshold", null);
+                            handleFieldChange(
+                              "max_shortlisted_candidates",
+                              null
+                            );
                           }
                         }}
                       />
-                      <span className="text-sm text-muted-foreground">{formState.auto_shortlist ? 'Enabled' : 'Disabled'}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {formState.auto_shortlist ? "Enabled" : "Disabled"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-4 pt-4">
@@ -1288,39 +1526,65 @@ if (testError || !test) {
                         try {
                           // Only send allowed fields for update
                           const allowedFields = [
-                            'job_description',
-                            'resume_score_threshold',
-                            'max_shortlisted_candidates',
-                            'auto_shortlist'
+                            "job_description",
+                            "resume_score_threshold",
+                            "max_shortlisted_candidates",
+                            "auto_shortlist",
                           ];
                           const testData: any = {};
                           for (const key of allowedFields) {
                             const value = formState[key];
-                            if (value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '')) {
+                            if (
+                              value !== undefined &&
+                              value !== null &&
+                              !(
+                                typeof value === "string" && value.trim() === ""
+                              )
+                            ) {
                               testData[key] = value;
                             }
                           }
-                          console.log('Updating test with:', testData);
-                          await updateTest({ testId: Number(testId), testData }).unwrap();
-                          setUpdateSuccess('Test updated successfully!');
+                          console.log("Updating test with:", testData);
+                          await updateTest({
+                            testId: Number(testId),
+                            testData,
+                          }).unwrap();
+                          setUpdateSuccess("Test updated successfully!");
                         } catch (e: any) {
-                          setUpdateError(e?.data?.message || 'Failed to update test');
+                          setUpdateError(
+                            e?.data?.message || "Failed to update test"
+                          );
                         }
                       }}
-                      disabled={isUpdatingTest || !hasUnsavedChanges(formState, test)}
+                      disabled={
+                        isUpdatingTest || !hasUnsavedChanges(formState, test)
+                      }
                     >
-                      {isUpdatingTest ? 'Saving...' : 'Save Changes'}
+                      {isUpdatingTest ? "Saving..." : "Save Changes"}
                     </Button>
 
-
-
-
-
-
-                    <Button variant="outline" onClick={() => { setEditMode(false); setFormState(null); setUpdateError(null); setUpdateSuccess(null); }}>Cancel</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditMode(false);
+                        setFormState(null);
+                        setUpdateError(null);
+                        setUpdateSuccess(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                  {updateError && <div className="text-red-600 text-sm mt-2">{updateError}</div>}
-                  {updateSuccess && <div className="text-green-600 text-sm mt-2">{updateSuccess}</div>}
+                  {updateError && (
+                    <div className="text-red-600 text-sm mt-2">
+                      {updateError}
+                    </div>
+                  )}
+                  {updateSuccess && (
+                    <div className="text-green-600 text-sm mt-2">
+                      {updateSuccess}
+                    </div>
+                  )}
                 </>
               )}
               {!formState && <div>Loading...</div>}
@@ -1349,14 +1613,23 @@ if (testError || !test) {
           <DialogHeader>
             <DialogTitle>Remove Candidate?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove this candidate? This action cannot be undone.
+              Are you sure you want to remove this candidate? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-4 mt-4">
-            <Button variant="destructive" onClick={confirmDeleteCandidate} disabled={isDeletingCandidate}>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteCandidate}
+              disabled={isDeletingCandidate}
+            >
               {isDeletingCandidate ? "Removing..." : "Yes, Remove"}
             </Button>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingCandidate}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeletingCandidate}
+            >
               Cancel
             </Button>
           </div>
@@ -1377,8 +1650,12 @@ if (testError || !test) {
       <Dialog open={!!viewResultId} onOpenChange={handleCloseResultDialog}>
         <DialogContent className="max-w-3xl p-8 bg-white rounded-xl shadow-2xl border border-gray-200">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-extrabold mb-2 text-gray-900">Screening Report</DialogTitle>
-            <DialogDescription className="mb-4 text-base text-gray-600">Detailed screening results for the candidate application.</DialogDescription>
+            <DialogTitle className="text-2xl font-extrabold mb-2 text-gray-900">
+              Screening Report
+            </DialogTitle>
+            <DialogDescription className="mb-4 text-base text-gray-600">
+              Detailed screening results for the candidate application.
+            </DialogDescription>
           </DialogHeader>
           {resultLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -1392,40 +1669,76 @@ if (testError || !test) {
               {/* Candidate Info Section */}
               <div className="flex flex-col md:flex-row gap-8 items-start">
                 <div className="flex-1">
-                  <div className="font-bold text-xl mb-1 text-gray-900">{candidateResult.candidate_name}</div>
-                  <div className="text-base text-gray-700 mb-2">{candidateResult.candidate_email}</div>
+                  <div className="font-bold text-xl mb-1 text-gray-900">
+                    {candidateResult.candidate_name}
+                  </div>
+                  <div className="text-base text-gray-700 mb-2">
+                    {candidateResult.candidate_email}
+                  </div>
                   <div className="mb-3">
-                    <a href={candidateResult.resume_link} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline font-medium text-base">View Resume</a>
+                    <a
+                      href={candidateResult.resume_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 hover:underline font-medium text-base"
+                    >
+                      View Resume
+                    </a>
                   </div>
                   <div className="flex gap-2 mb-3">
-                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 capitalize">{candidateResult.screening_status}</span>
+                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 capitalize">
+                      {candidateResult.screening_status}
+                    </span>
                   </div>
                   <div className="flex gap-2 mb-3">
                     {candidateResult.is_shortlisted && (
-                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">Shortlisted</span>
+                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                        Shortlisted
+                      </span>
                     )}
                   </div>
                   <div className="text-sm text-gray-500 mb-2">
-                    <span className="font-medium">Applied:</span> {formatDate(candidateResult.applied_at)}<br />
-                    <span className="font-medium">Screened:</span> {formatDate(candidateResult.screening_completed_at)}
+                    <span className="font-medium">Applied:</span>{" "}
+                    {formatDate(candidateResult.applied_at)}
+                    <br />
+                    <span className="font-medium">Screened:</span>{" "}
+                    {formatDate(candidateResult.screening_completed_at)}
                   </div>
                 </div>
                 <div className="flex-1">
                   <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-base">
-                    <div className="font-semibold text-gray-700">Resume Score</div>
-                    <div className="font-bold text-gray-900">{candidateResult.resume_score ?? '-'}</div>
-                    <div className="font-semibold text-gray-700">Skill Match %</div>
-                    <div className="font-bold text-gray-900">{candidateResult.skill_match_percentage ?? '-'}</div>
-                    <div className="font-semibold text-gray-700">Experience Score</div>
-                    <div className="font-bold text-gray-900">{candidateResult.experience_score ?? '-'}</div>
-                    <div className="font-semibold text-gray-700">Education Score</div>
-                    <div className="font-bold text-gray-900">{candidateResult.education_score ?? '-'}</div>
+                    <div className="font-semibold text-gray-700">
+                      Resume Score
+                    </div>
+                    <div className="font-bold text-gray-900">
+                      {candidateResult.resume_score ?? "-"}
+                    </div>
+                    <div className="font-semibold text-gray-700">
+                      Skill Match %
+                    </div>
+                    <div className="font-bold text-gray-900">
+                      {candidateResult.skill_match_percentage ?? "-"}
+                    </div>
+                    <div className="font-semibold text-gray-700">
+                      Experience Score
+                    </div>
+                    <div className="font-bold text-gray-900">
+                      {candidateResult.experience_score ?? "-"}
+                    </div>
+                    <div className="font-semibold text-gray-700">
+                      Education Score
+                    </div>
+                    <div className="font-bold text-gray-900">
+                      {candidateResult.education_score ?? "-"}
+                    </div>
                   </div>
                 </div>
               </div>
               {/* AI Reasoning Section */}
               <div className="mt-6">
-                <div className="font-bold text-lg mb-2 text-gray-900">AI Reasoning</div>
+                <div className="font-bold text-lg mb-2 text-gray-900">
+                  AI Reasoning
+                </div>
                 <div className="bg-gray-50 rounded-lg p-4 text-base text-gray-800 whitespace-pre-line border border-gray-200 shadow-sm">
                   {candidateResult.ai_reasoning}
                 </div>

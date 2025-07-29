@@ -149,11 +149,10 @@ export default function CandidateHomePage() {
                           test.assessment_deadline
                         ).toLocaleString()}
                         status={test.status || "scheduled"}
-                        countdown={countdown}
                         showStartButton={isLive}
                         onAction={() =>
                           handleTestAction(
-                            test.assessment_id || test.id || test.test_id,
+                            test.id || test.test_id,
                             test.status || "scheduled"
                           )
                         }

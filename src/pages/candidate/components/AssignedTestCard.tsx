@@ -17,8 +17,6 @@ interface AssignedTestCardProps {
 }
 
 export function AssignedTestCard({
-  // ...existing code...
-
   testName,
   jobDescription,
   scheduledTime,

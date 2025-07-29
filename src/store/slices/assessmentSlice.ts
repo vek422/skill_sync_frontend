@@ -182,6 +182,7 @@ const assessmentSlice = createSlice({
         },
 
         completeAssessment(state) {
+            state.assessment_completed = true
             if (state.assessment_id && state.application_id) {
                 state.assessment_completed = true
             }

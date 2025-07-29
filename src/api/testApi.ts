@@ -1,4 +1,4 @@
-// Bulk add shortlisted candidates to assessments
+
 export interface BulkAssessmentResponse {
   test_id: number;
   shortlisted_count: number;
@@ -16,15 +16,8 @@ export interface AddCandidateToAssessmentResponse {
   success: boolean;
   message: string;
 }
-
-// ...existing code...
-
-
-
-// TypeScript interfaces for API request and response
-// These match your backend API format exactly
 export interface CreateTestRequest {
-  test_name: string;              // Backend expects snake_case
+  test_name: string;
   job_description: string;
   resume_score_threshold?: number;
   max_shortlisted_candidates?: number;
@@ -57,7 +50,6 @@ export interface GetTestsResponse {
   per_page: number;
 }
 
-// Update the Test interface to match the actual server response
 export interface Test {
   test_id: number;
   test_name: string;
@@ -67,7 +59,6 @@ export interface Test {
   creator_name: string;
   created_at: string;
   scheduled_at: string | null;
-  // Optional fields that might be present
   job_description?: string;
   resume_score_threshold?: number;
   max_shortlisted_candidates?: number;
@@ -114,7 +105,7 @@ const testApi = apiSlice.injectEndpoints({
     // Create new test mutation
     createTest: builder.mutation<CreateTestResponse, CreateTestRequest>({
       query: (testData) => ({
-        url: '/tests/', 
+        url: '/tests/',
         method: 'POST',
         data: testData
       }),
@@ -199,13 +190,15 @@ const testApi = apiSlice.injectEndpoints({
         time_limit_minutes: number;
         message: string;
       },
-      { test_id: number; data: {
-        high_priority_questions: number;
-        medium_priority_questions: number;
-        low_priority_questions: number;
-        total_questions: number;
-        time_limit_minutes: number;
-      } }
+      {
+        test_id: number; data: {
+          high_priority_questions: number;
+          medium_priority_questions: number;
+          low_priority_questions: number;
+          total_questions: number;
+          time_limit_minutes: number;
+        }
+      }
     >({
       query: ({ test_id, data }) => ({
         url: `/tests/${test_id}/update-question-counts`,
@@ -226,7 +219,7 @@ const testApi = apiSlice.injectEndpoints({
 });
 
 // Export hooks for use in components (follows your authApi pattern exactly)
-export const { 
+export const {
   useCreateTestMutation,
   useGetTestsQuery,
   useGetTestByIdQuery,

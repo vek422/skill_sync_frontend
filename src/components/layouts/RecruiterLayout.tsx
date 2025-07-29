@@ -7,9 +7,6 @@ export function RecruiterLayout() {
       <SidebarProvider>
         <AppSidebar />
         <main className="flex-1 p-4 overflow-y-auto relative">
-          <div className="absolute top-5 left-0 z-50 flex">
-            <SidebarTrigger />
-          </div>
           <div className="container pl-4 pt-1 overflow-hidden ">
             <Outlet />
           </div>

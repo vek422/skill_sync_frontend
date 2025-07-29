@@ -4,23 +4,22 @@ import { Provider } from "react-redux";
 import { store, persistor } from "./store";
 import { PersistGate } from "redux-persist/integration/react";
 import { ThemeProvider } from "./components/theme-provider";
-import React, { useEffect } from 'react';
-import { Toaster } from "@/components/ui/sonner"
-
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function App() {
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (!event) return;
-      if (event.key === 'auth_token' && !event.newValue) {
-        window.location.href = '/login';
+      if (event.key === "auth_token" && !event.newValue) {
+        window.location.href = "/login";
       }
-      if (event.key === 'auth_token' && event.newValue) {
-        window.location.href = '/dashboard'; // Change if needed
+      if (event.key === "auth_token" && event.newValue) {
+        window.location.href = "/dashboard"; // Change if needed
       }
     };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
   return (
     <>
