@@ -1,15 +1,26 @@
+
 import React, { useState } from 'react';
 import { useGetCandidatesQuery, useGetCandidateTestsQuery } from '../../api/candidatesApi';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DataTable } from '../../components/CandidatesTable/data-table';
+import { candidateColumns } from '../../components/CandidatesTable/columns';
 
 const CandidatesPage: React.FC = () => {
-  const { data: candidates = [], isLoading } = useGetCandidatesQuery();
+  const { data: candidates = [] } = useGetCandidatesQuery();
   const [selectedCandidate, setSelectedCandidate] = useState<null | { user_id: number; name: string }>();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
+
+  const filteredCandidates = search
+    ? candidates.filter((candidate) =>
+        [candidate.name, candidate.email]
+          .some((field) =>
+            typeof field === "string" && field.toLowerCase().includes(search.toLowerCase())
+          )
+      )
+    : candidates;
 
   const {
     data: tests = [],
@@ -18,49 +29,15 @@ const CandidatesPage: React.FC = () => {
     skip: !selectedCandidate,
   });
 
-  const filteredCandidates = search
-    ? candidates.filter((c) =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.email.toLowerCase().includes(search.toLowerCase())
-      )
-    : candidates;
-
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <Card className="border-muted shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold tracking-tight">👤 Candidates</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Input
-            placeholder="🔍 Search candidates..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full"
-          />
-          <div className="divide-y">
-            {isLoading ? (
-              [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 rounded" />)
-            ) : filteredCandidates.length === 0 ? (
-              <p className="text-muted-foreground text-center mt-4">No candidates found.</p>
-            ) : (
-              filteredCandidates.map((candidate) => (
-                <div
-                  key={candidate.user_id}
-                  className="flex items-center justify-between py-4 cursor-pointer hover:bg-muted/50 transition rounded"
-                  onClick={() => setSelectedCandidate(candidate)}
-                >
-                  <div>
-                    <div className="font-semibold text-lg">{candidate.name}</div>
-                    <div className="text-muted-foreground text-sm">{candidate.email}</div>
-                  </div>
-                  <Badge variant="outline">{candidate.role}</Badge>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <DataTable
+        columns={candidateColumns}
+        data={filteredCandidates}
+        onRowClick={setSelectedCandidate}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search candidates..."
+      />
 
       <Dialog open={!!selectedCandidate} onOpenChange={() => setSelectedCandidate(null)}>
         <DialogContent>

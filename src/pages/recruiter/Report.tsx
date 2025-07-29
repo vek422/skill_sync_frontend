@@ -23,7 +23,7 @@ import {
 } from "recharts";
 import { Users, TrendingUp, Clock, Award, Download } from "lucide-react";
 import { DataTable } from "@/components/CandidatesTable/data-table";
-import { columns, type Candidate } from "@/components/CandidatesTable/columns";
+import { candidateColumns as columns, type Candidate } from "@/components/CandidatesTable/columns";
 
 // Mock data - replace with actual API calls
 const testData = {
