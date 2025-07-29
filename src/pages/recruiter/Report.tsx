@@ -1,11 +1,6 @@
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+
 import { DataTable } from "@/components/AssessmentsTable/data-table";
 import { columns } from "@/components/AssessmentsTable/columns";
 import { useGetTestAssessmentsQuery } from "@/api/assessmentApi";

@@ -36,6 +36,7 @@ interface DataTableProps<TData, TValue> {
     filterKey: string;
   }[];
   onFilterChange?: (key: string, value: string) => void;
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -45,9 +46,11 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Search...",
   filterOptions = [],
   onFilterChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [internalSearchTerm, setInternalSearchTerm] = useState("");
+  const isControlled = typeof onSearchChange === "function";
 
   const table = useReactTable({
     data,
@@ -61,9 +64,10 @@ export function DataTable<TData, TValue>({
   });
 
   const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
-    if (onSearchChange) {
+    if (isControlled && onSearchChange) {
       onSearchChange(value);
+    } else {
+      setInternalSearchTerm(value);
     }
   };
 
@@ -81,7 +85,7 @@ export function DataTable<TData, TValue>({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
-            value={searchTerm}
+            value={isControlled ? undefined : internalSearchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10"
           />
@@ -138,7 +142,8 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted/50"
+                  className="hover:bg-muted/50 cursor-pointer min-h-[44px]"
+                  onClick={() => onRowClick && onRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
