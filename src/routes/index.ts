@@ -25,10 +25,16 @@ import TestInterface from "@/pages/candidate/TestInterface";
 import CandidateReport from "@/pages/recruiter/Component/CandidateReport";
 import CandidatesPage from "../pages/recruiter/CandidatesPage";
 import ChatInterface from "@/pages/ChatInterface";
+import Router from "@/pages/Router";
+import LogPage from "@/pages/LogPage";
 
 
 
 export const router = createBrowserRouter([
+    {
+        path: "/",
+        Component: Router
+    },
     {
         path: "/login",
         Component: Login,
@@ -48,7 +54,7 @@ export const router = createBrowserRouter([
 
     {
         path: "/recruiter",
-        Component: withAuthGaurd(RecruiterLayout),
+        Component: withAuthGaurd(RecruiterLayout, "recruiter"),
         children: [
             {
                 path: "dashboard",
@@ -62,7 +68,7 @@ export const router = createBrowserRouter([
             ,
             {
                 path: "logs",
-                Component: withAuthGaurd((await import("../pages/LogPage")).default),
+                Component: LogPage,
             },
             {
                 path: "tests",
@@ -102,7 +108,7 @@ export const router = createBrowserRouter([
     },
     {
         path: "/candidate",
-        Component: withAuthGaurd(CandidatesLayout),
+        Component: withAuthGaurd(CandidatesLayout, "candidate"),
         children: [
             {
                 path: "",
@@ -112,20 +118,21 @@ export const router = createBrowserRouter([
                 path: "all-tests",
                 Component: AllTests
             }
+            , {
+                path: "assessment/:id",
+                Component: Assessment,
+            },
+            {
+                path: "test/:id/instruction",
+                Component: TestInstructionPage,
+            },
+            {
+                path: "test/:id",
+                Component: TestInterface,
+            }
         ]
     },
-    {
-        path: "/candidate/assessment/:id",
-        Component: withAuthGaurd(Assessment),
-    },
-    {
-        path: "/candidate/test/:id/instruction",
-        Component: withAuthGaurd(TestInstructionPage),
-    },
-    {
-        path: "/candidate/test/:id",
-        Component: withAuthGaurd(TestInterface),
-    },
+
     {
         path: "/chat-interface",
         Component: ChatInterface

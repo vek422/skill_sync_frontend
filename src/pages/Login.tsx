@@ -26,7 +26,7 @@ export default function LoginPage() {
           user: {
             name: data.email.split("@")[0],
             email: data.email,
-            role: result.role === "candidate" ? "candaidate" : "recruiter",
+            role: result.role === "candidate" ? "candidate" : "recruiter",
             user_id: result.user_id.toString(),
           },
         })
