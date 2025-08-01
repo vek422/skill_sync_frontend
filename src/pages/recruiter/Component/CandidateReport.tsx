@@ -320,14 +320,6 @@ export default function CandidateReport() {
               </div>
             </div>
           </div>
-
-          {/* Domain Mastery as text */}
-          {report.domain_mastery && (
-            <div>
-              <h3 className="font-semibold text-lg mb-4">Domain Mastery</h3>
-              <p className="text-sm leading-relaxed">{report.domain_mastery}</p>
-            </div>
-          )}
         </CardContent>
       </Card>
 

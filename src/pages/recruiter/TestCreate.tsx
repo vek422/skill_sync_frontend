@@ -22,60 +22,65 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 // Updated Zod validation schema to match backend
-const testCreateSchema = z.object({
-  testName: z
-    .string()
-    .min(1, "Test name is required")
-    .min(3, "Test name must be at least 3 characters")
-    .max(100, "Test name must not exceed 100 characters"),
+const testCreateSchema = z
+  .object({
+    testName: z
+      .string()
+      .min(1, "Test name is required")
+      .min(3, "Test name must be at least 3 characters")
+      .max(100, "Test name must not exceed 100 characters"),
 
-  jobDescription: z
-    .string()
-    .min(1, "Job description is required")
-    .min(300, "Job description must be at least 300 characters")
-    .max(2000, "Job description must not exceed 2000 characters"),
+    jobDescription: z
+      .string()
+      .min(1, "Job description is required")
+      .min(300, "Job description must be at least 300 characters")
+      .max(10000, "Job description must not exceed 10000 characters"),
 
-  // Backend fields - all optional except auto_shortlist
-  resumeScoreThreshold: z
-    .number()
-    .min(0, "Resume score threshold must be at least 0")
-    .max(100, "Resume score threshold must not exceed 100")
-    .optional(),
+    // Backend fields - all optional except auto_shortlist
+    resumeScoreThreshold: z
+      .number()
+      .min(0, "Resume score threshold must be at least 0")
+      .max(100, "Resume score threshold must not exceed 100")
+      .optional(),
 
-  maxShortlistedCandidates: z
-    .number()
-    .min(1, "Must allow at least 1 candidate")
-    .max(1000, "Cannot exceed 1000 candidates")
-    .optional(),
+    maxShortlistedCandidates: z
+      .number()
+      .min(1, "Must allow at least 1 candidate")
+      .max(1000, "Cannot exceed 1000 candidates")
+      .optional(),
 
-  autoShortlist: z.boolean(),
+    autoShortlist: z.boolean(),
 
-  // Removed totalQuestions, timeLimitMinutes, totalMarks from schema
-}).refine(
-  (data) => {
-    // If auto shortlist is enabled, max shortlisted candidates is required
-    if (data.autoShortlist && !data.maxShortlistedCandidates) {
-      return false;
+    // Removed totalQuestions, timeLimitMinutes, totalMarks from schema
+  })
+  .refine(
+    (data) => {
+      // If auto shortlist is enabled, max shortlisted candidates is required
+      if (data.autoShortlist && !data.maxShortlistedCandidates) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Max shortlisted candidates is required when auto shortlist is enabled",
+      path: ["maxShortlistedCandidates"],
     }
-    return true;
-  },
-  {
-    message: "Max shortlisted candidates is required when auto shortlist is enabled",
-    path: ["maxShortlistedCandidates"],
-  }
-).refine(
-  (data) => {
-    // If auto shortlist is enabled, resume score threshold is required
-    if (data.autoShortlist && data.resumeScoreThreshold === undefined) {
-      return false;
+  )
+  .refine(
+    (data) => {
+      // If auto shortlist is enabled, resume score threshold is required
+      if (data.autoShortlist && data.resumeScoreThreshold === undefined) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message:
+        "Resume score threshold is required when auto shortlist is enabled",
+      path: ["resumeScoreThreshold"],
     }
-    return true;
-  },
-  {
-    message: "Resume score threshold is required when auto shortlist is enabled",
-    path: ["resumeScoreThreshold"],
-  }
-);
+  );
 
 type TestCreateFormData = z.infer<typeof testCreateSchema>;
 
@@ -85,11 +90,13 @@ export default function TestCreate() {
   const lowCount = 5;
   const medCount = 5;
   const highCount = 5;
-  const totalTime = Math.ceil((lowCount * 45 + medCount * 60 + highCount * 90) / 60);
+  const totalTime = Math.ceil(
+    (lowCount * 45 + medCount * 60 + highCount * 90) / 60
+  );
   // RTK Query hook for API call with built-in loading states
   const [createTest, { isLoading, error, isSuccess }] = useCreateTestMutation();
   const navigate = useNavigate();
-  
+
   const form = useForm<TestCreateFormData>({
     resolver: zodResolver(testCreateSchema),
     defaultValues: {
@@ -109,22 +116,20 @@ export default function TestCreate() {
       const payload = {
         test_name: data.testName,
         job_description: data.jobDescription,
-        resume_score_threshold: data.autoShortlist ? data.resumeScoreThreshold : null,
-        max_shortlisted_candidates: data.autoShortlist ? data.maxShortlistedCandidates : null,
-        auto_shortlist: data.autoShortlist
+        resume_score_threshold: data.autoShortlist
+          ? data.resumeScoreThreshold
+          : null,
+        max_shortlisted_candidates: data.autoShortlist
+          ? data.maxShortlistedCandidates
+          : null,
+        auto_shortlist: data.autoShortlist,
       };
       console.log("Submitting test data:", payload);
-      // Call API using RTK Query mutation
       const result = await createTest(payload).unwrap();
       console.log("Test created successfully:", result);
-      // Reset form on success
       form.reset();
-      // Navigate to tests list or show success message
-      // navigate('/recruiter/tests');
-      
     } catch (error) {
       console.error("Failed to create test:", error);
-      // RTK Query error is automatically handled in the error state
     }
   };
 
@@ -132,7 +137,7 @@ export default function TestCreate() {
   useEffect(() => {
     if (isSuccess) {
       const timer = setTimeout(() => {
-        navigate('/recruiter/tests');
+        navigate("/recruiter/tests");
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -140,7 +145,6 @@ export default function TestCreate() {
 
   const jobDescriptionValue = form.watch("jobDescription");
   const characterCount = jobDescriptionValue ? jobDescriptionValue.length : 0;
-  // Watch autoShortlist to conditionally enable maxShortlistedCandidates
   const autoShortlistEnabled = form.watch("autoShortlist");
   useEffect(() => {
     if (!autoShortlistEnabled) {
@@ -277,12 +281,15 @@ export default function TestCreate() {
                             value={field.value ?? ""}
                             onChange={(e) => {
                               const value = e.target.value;
-                              field.onChange(value === "" ? undefined : Number(value));
+                              field.onChange(
+                                value === "" ? undefined : Number(value)
+                              );
                             }}
                           />
                         </FormControl>
                         <FormDescription>
-                          Minimum resume score to qualify (0-100%) - Required when auto shortlist is enabled
+                          Minimum resume score to qualify (0-100%) - Required
+                          when auto shortlist is enabled
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -307,12 +314,15 @@ export default function TestCreate() {
                             value={field.value ?? ""}
                             onChange={(e) => {
                               const value = e.target.value;
-                              field.onChange(value === "" ? undefined : Number(value));
+                              field.onChange(
+                                value === "" ? undefined : Number(value)
+                              );
                             }}
                           />
                         </FormControl>
                         <FormDescription>
-                          Maximum number of candidates to shortlist (1-1000) - Required when auto shortlist is enabled
+                          Maximum number of candidates to shortlist (1-1000) -
+                          Required when auto shortlist is enabled
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -330,7 +340,8 @@ export default function TestCreate() {
                   <div>
                     <p className="font-semibold">Failed to create test</p>
                     <p className="text-sm">
-                      {(error as any)?.data?.message || 'An unexpected error occurred. Please try again.'}
+                      {(error as any)?.data?.message ||
+                        "An unexpected error occurred. Please try again."}
                     </p>
                   </div>
                 </div>
@@ -354,8 +365,8 @@ export default function TestCreate() {
 
           {/* Form Actions */}
           <div className="flex gap-4 pt-6">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="flex-1 sm:flex-none"
               disabled={isLoading}
             >
@@ -365,7 +376,7 @@ export default function TestCreate() {
                   Creating Test...
                 </>
               ) : (
-                'Create Test'
+                "Create Test"
               )}
             </Button>
             <Button

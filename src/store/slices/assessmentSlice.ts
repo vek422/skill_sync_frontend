@@ -40,8 +40,23 @@ export type Progress = {
     total_questions: number;
 };
 
+export type ChatMessage = {
+    id: string;
+    type: 'ai_question' | 'user_response' | 'ai_feedback' | 'ai_process' | 'system';
+    content: string;
+    timestamp: string;
+    question_id?: string;
+    options?: QuestionOption[];
+    metadata?: {
+        skill?: string;
+        difficulty?: string;
+        feedbackMessage?: string;
+    };
+};
+
 export type AssessmentState = {
     // Session identifiers
+    test_name: string | null;
     assessment_id: string | null;
     application_id: string | null;
     test_id: number | null;
@@ -67,6 +82,9 @@ export type AssessmentState = {
     // Progress tracking
     progress: number
 
+    // Chat functionality
+    chat_history: ChatMessage[];
+    current_interaction_type: 'question' | 'waiting_response' | 'processing' | 'completed';
 
     // Error handling
     current_error: string | null;
@@ -84,7 +102,7 @@ const initialState: AssessmentState = {
     test_id: null,
     connection_id: null,
     thread_id: null,
-
+    test_name: "",
     // Time tracking
     start_time: null,
     end_time: null,
@@ -104,6 +122,9 @@ const initialState: AssessmentState = {
     // Progress tracking
     progress: 0,
 
+    // Chat functionality
+    chat_history: [],
+    current_interaction_type: 'question',
 
     // Error handling
     current_error: null,
@@ -159,12 +180,14 @@ const assessmentSlice = createSlice({
             assessment_id: string;
             thread_id: string;
             test_id: number;
+            test_name: string;
         }>) {
             state.assessment_started = true;
             state.assessment_id = action.payload.assessment_id;
             state.thread_id = action.payload.thread_id;
             state.test_id = action.payload.test_id;
             state.current_error = null;
+            state.test_name = action.payload.test_name
             state.last_message_timestamp = new Date().toISOString();
         },
 
@@ -208,7 +231,9 @@ const assessmentSlice = createSlice({
             state.current_error = null;
             state.last_message_timestamp = new Date().toISOString();
         },
-
+        updateTestName(state, action: PayloadAction<string>) {
+            state.test_name = action.payload
+        },
         // Answer management
         submitAnswer(state, action: PayloadAction<{
             question_id: string;
@@ -317,15 +342,33 @@ const assessmentSlice = createSlice({
         // Update last message timestamp (for heartbeat/activity tracking)
         updateLastMessageTimestamp(state) {
             state.last_message_timestamp = new Date().toISOString();
-        },
-
-        // Reconnection management
+        },        // Reconnection management
         incrementReconnectAttempts(state) {
             state.reconnect_attempts += 1;
         },
 
         resetReconnectAttempts(state) {
             state.reconnect_attempts = 0;
+        },
+
+        // Chat functionality
+        addChatMessage(state, action: PayloadAction<ChatMessage>) {
+            state.chat_history.push(action.payload);
+            state.last_message_timestamp = new Date().toISOString();
+        },
+
+        setInteractionType(state, action: PayloadAction<'question' | 'waiting_response' | 'processing' | 'completed'>) {
+            state.current_interaction_type = action.payload;
+            state.last_message_timestamp = new Date().toISOString();
+        },
+
+        updateChatHistory(state, action: PayloadAction<ChatMessage[]>) {
+            state.chat_history = action.payload;
+            state.last_message_timestamp = new Date().toISOString();
+        },
+
+        clearChatHistory(state) {
+            state.chat_history = [];
         }
     }
 });
@@ -348,7 +391,12 @@ export const {
     resetAssessment,
     updateLastMessageTimestamp,
     incrementReconnectAttempts,
-    resetReconnectAttempts
+    resetReconnectAttempts,
+    addChatMessage,
+    setInteractionType,
+    updateChatHistory,
+    clearChatHistory,
+    updateTestName
 } = assessmentSlice.actions;
 
 export const assessmentReducer = assessmentSlice.reducer;

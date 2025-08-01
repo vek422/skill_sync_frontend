@@ -24,6 +24,7 @@ import TestInstructionPage from "@/pages/candidate/TestInstruction";
 import TestInterface from "@/pages/candidate/TestInterface";
 import CandidateReport from "@/pages/recruiter/Component/CandidateReport";
 import CandidatesPage from "../pages/recruiter/CandidatesPage";
+import ChatInterface from "@/pages/ChatInterface";
 
 
 
@@ -121,13 +122,20 @@ export const router = createBrowserRouter([
         path: "/candidate/test/:id/instruction",
         Component: withAuthGaurd(TestInstructionPage),
     },
-
     {
         path: "/candidate/test/:id",
         Component: withAuthGaurd(TestInterface),
     },
     {
+        path: "/chat-interface",
+        Component: ChatInterface
+    },
+    {
+        path: "/instructions",
+        Component: TestInstructionPage
+    },
+    {
         path: "*",
         Component: FallbackPage,
-    },
+    }
 ]);

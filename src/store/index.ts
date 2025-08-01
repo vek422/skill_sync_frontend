@@ -22,7 +22,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     storage,
     key: "root",
-    whitelist: ["auth", "assessment"] // Persist both auth and assessment state
+    whitelist: ["auth"]
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -42,9 +42,9 @@ export const store = configureStore({
                 ]
             }
         })
-        .concat(apiSlice.middleware)
-        .concat(logsApi.middleware)
-        .concat(candidatesApi.middleware)
+            .concat(apiSlice.middleware)
+            .concat(logsApi.middleware)
+            .concat(candidatesApi.middleware)
 });
 
 export const persistor = persistStore(store);
@@ -56,6 +56,7 @@ setAuthTokenGetter(() => store.getState().auth.token);
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch
 export const useAppDispatch: () => typeof store.dispatch = () =>
     useDispatch<typeof store.dispatch>();
 
