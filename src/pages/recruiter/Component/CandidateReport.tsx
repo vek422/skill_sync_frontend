@@ -159,6 +159,7 @@ function InterviewFocusSection({ focusAreas }: { focusAreas: string[] }) {
 }
 
 const Header = ({ candidate_name, candidateGraph, percentage_score }) => {
+  console.log("idk", candidateGraph);
   return (
     <>
       <Card>
@@ -194,7 +195,9 @@ export default function CandidateReport() {
   ] = useGenerateAssessmentReportMutation();
 
   const report = data?.data?.report || generatedReport?.report;
-
+  const candidateGraph = data?.data?.result?.candidate_graph
+    ? data?.data?.result?.candidate_graph
+    : [];
   // Sample data for spider chart - replace with actual data from the report
   const sampleSpiderData = [
     { node_id: "JavaScript", score: 85 },
@@ -264,7 +267,7 @@ export default function CandidateReport() {
           </div>
         </div>
         <Header
-          candidateGraph={sampleSpiderData}
+          candidateGraph={data?.data?.result?.candidate_graph}
           candidate_name={data?.data?.candidate_name}
           percentage_score={data?.data?.percentage_score}
         />
@@ -317,7 +320,7 @@ export default function CandidateReport() {
       </div>
 
       <Header
-        candidateGraph={sampleSpiderData}
+        candidateGraph={candidateGraph}
         candidate_name={data?.data?.candidate_name}
         percentage_score={data?.data?.percentage_score}
       />
