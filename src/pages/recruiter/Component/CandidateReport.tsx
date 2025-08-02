@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import SpiderChart from "@/components/SpiderChart";
 import {
   CheckCircle,
   XCircle,
@@ -157,6 +158,31 @@ function InterviewFocusSection({ focusAreas }: { focusAreas: string[] }) {
   );
 }
 
+const Header = ({ candidate_name, candidateGraph, percentage_score }) => {
+  return (
+    <>
+      <Card>
+        <CardContent className="flex justify-between items-center">
+          <h1 className="text-xl">
+            <span className="font-bold">Candidate</span>: {candidate_name}
+          </h1>
+          <h1 className="text-xl">
+            <span className="font-bold">Score</span> : {percentage_score}%
+          </h1>
+        </CardContent>{" "}
+      </Card>
+
+      <SpiderChart
+        data={candidateGraph}
+        title="Skill Assessment Overview"
+        maxItems={8}
+        height={400}
+        scoreRange={[0, 100]}
+      />
+    </>
+  );
+};
+
 export default function CandidateReport() {
   const { assessmentId = "" } = useParams();
   const printRef = useRef<HTMLDivElement>(null);
@@ -168,6 +194,22 @@ export default function CandidateReport() {
   ] = useGenerateAssessmentReportMutation();
 
   const report = data?.data?.report || generatedReport?.report;
+
+  // Sample data for spider chart - replace with actual data from the report
+  const sampleSpiderData = [
+    { node_id: "JavaScript", score: 85 },
+    { node_id: "React", score: 78 },
+    { node_id: "Node.js", score: 72 },
+    { node_id: "TypeScript", score: 68 },
+    { node_id: "Database Design", score: 75 },
+    { node_id: "API Development", score: 82 },
+    { node_id: "Problem Solving", score: 88 },
+    { node_id: "Code Quality", score: 79 },
+    { node_id: "Testing", score: 65 },
+    { node_id: "System Design", score: 70 },
+    { node_id: "Git/Version Control", score: 90 },
+    { node_id: "Communication", score: 73 },
+  ];
 
   // Print handler
   const handlePrint = useReactToPrint({
@@ -201,6 +243,7 @@ export default function CandidateReport() {
     `,
   });
 
+  console.log(data);
   const handleGenerateReport = async () => {
     try {
       await generateReport(assessmentId).unwrap();
@@ -211,7 +254,7 @@ export default function CandidateReport() {
 
   if (data && !data.data.report_generated) {
     return (
-      <>
+      <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -220,6 +263,11 @@ export default function CandidateReport() {
             </Button>
           </div>
         </div>
+        <Header
+          candidateGraph={sampleSpiderData}
+          candidate_name={data?.data?.candidate_name}
+          percentage_score={data?.data?.percentage_score}
+        />
         <Card className="my-10">
           <CardContent className="flex justify-center flex-col items-center py-8">
             <h1 className="text-lg mb-4">
@@ -237,7 +285,7 @@ export default function CandidateReport() {
             </Button>
           </CardContent>
         </Card>
-      </>
+      </div>
     );
   }
 
@@ -268,18 +316,11 @@ export default function CandidateReport() {
         </Button>
       </div>
 
-      <Card className="border-2 border-primary/20 p-0">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 p-2 px-4">
-          <div className="flex items-center justify-between">
-            <div className="">
-              <CardDescription className="text-lg">
-                <span className="font-semibold">Candidate:</span>
-                {report.candidate_name}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <Header
+        candidateGraph={sampleSpiderData}
+        candidate_name={data?.data?.candidate_name}
+        percentage_score={data?.data?.percentage_score}
+      />
 
       {/* Technical Overview */}
       <Card>

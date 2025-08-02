@@ -122,17 +122,16 @@ export const router = createBrowserRouter([
                 path: "assessment/:id",
                 Component: Assessment,
             },
-            {
-                path: "test/:id/instruction",
-                Component: TestInstructionPage,
-            },
-            {
-                path: "test/:id",
-                Component: TestInterface,
-            }
         ]
     },
-
+    {
+        path: "/candidate/test/:id/instruction",
+        Component: TestInstructionPage,
+    },
+    {
+        path: "/candidate/test/:id",
+        Component: TestInterface,
+    },
     {
         path: "/chat-interface",
         Component: ChatInterface

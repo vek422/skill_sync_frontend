@@ -15,9 +15,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
-import SkillGraphDistributionControls from "@/components/SkillGraphDistributionControls";
-import { useCreateTestMutation, type CreateTestRequest } from "@/api/testApi";
+import { useEffect } from "react";
+
+import { useCreateTestMutation } from "@/api/testApi";
 import { useNavigate } from "react-router-dom";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 

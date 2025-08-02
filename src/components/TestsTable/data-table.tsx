@@ -45,18 +45,15 @@ export function TestsDataTable({ data, columns }: TestsDataTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  // Handle row click navigation
   const handleRowClick = (testId: string, event: React.MouseEvent) => {
-    // Prevent navigation if clicking on action buttons
     const target = event.target as HTMLElement;
-    const isActionButton = target.closest('button') || target.closest('a');
-    
+    const isActionButton = target.closest("button") || target.closest("a");
+
     if (!isActionButton) {
       navigate(`/recruiter/test/${testId}`);
     }
   };
 
-  // Status filter options
   const statusOptions: { value: FilterStatus; label: string }[] = [
     { value: "all", label: "All" },
     { value: "draft", label: "Draft" },
@@ -65,12 +62,10 @@ export function TestsDataTable({ data, columns }: TestsDataTableProps) {
     { value: "completed", label: "Completed" },
   ];
 
-  // Get current status filter
   const currentStatusFilter =
     (columnFilters.find((filter) => filter.id === "test_status")
       ?.value as FilterStatus) || "all";
 
-  // Handle status filter change
   const handleStatusFilterChange = (status: FilterStatus) => {
     if (status === "all") {
       setColumnFilters((prev) =>
@@ -84,7 +79,6 @@ export function TestsDataTable({ data, columns }: TestsDataTableProps) {
     }
   };
 
-  // Create table instance
   const table = useReactTable({
     data,
     columns,
@@ -190,7 +184,9 @@ export function TestsDataTable({ data, columns }: TestsDataTableProps) {
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                     className="hover:bg-muted/80 cursor-pointer transition-all duration-200 hover:shadow-sm"
-                    onClick={(event) => handleRowClick(row.original.test_id, event)}
+                    onClick={(event) =>
+                      handleRowClick(row.original.test_id, event)
+                    }
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
