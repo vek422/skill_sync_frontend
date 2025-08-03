@@ -12,9 +12,17 @@ export default function RecruiterRegister() {
   const handleRegister = async (data) => {
     try {
       await register(data).unwrap();
-      navigate("/login");
+      // navigate("/login");
     } catch (err) {
-      if (err?.data?.detail && Array.isArray(err.data.detail)) {
+      console.log(err);
+      if (Array.isArray(err?.data?.detail))
+        return toast(err?.data?.detail[0].msg, {
+          style: {
+            border: "1px solid var(--destructive)",
+            color: "var(--destructive)",
+          },
+        });
+      if (err?.data?.detail) {
         toast(err.data.detail, {
           style: {
             border: "1px solid var(--destructive)",
