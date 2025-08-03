@@ -196,7 +196,7 @@ export default function CandidateReport() {
 
   const report = data?.data?.report || generatedReport?.report;
   const candidateGraph = data?.data?.result?.candidate_graph
-    ? data?.data?.result?.candidate_graph
+    ? Array.from(data?.data?.result?.candidate_graph)
     : [];
   // Sample data for spider chart - replace with actual data from the report
   const sampleSpiderData = [
@@ -267,7 +267,7 @@ export default function CandidateReport() {
           </div>
         </div>
         <Header
-          candidateGraph={data?.data?.result?.candidate_graph}
+          candidateGraph={candidateGraph}
           candidate_name={data?.data?.candidate_name}
           percentage_score={data?.data?.percentage_score}
         />
