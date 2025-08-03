@@ -6,18 +6,29 @@ import { Badge } from "@/components/ui/badge";
 import TestDistributionChart from "@/components/TestDistributionChart";
 import { useGetRecruiterDashboardSummaryQuery } from "@/api/candidateApi";
 import {
+  Clock,
+  CalendarCheck,
+  CheckCircle,
+  AlertTriangle,
+  Ban,
+  CircleDashed,
+} from "lucide-react";
+import {
   CalendarDays,
   Users,
   CheckSquare,
   Plus,
   TrendingUp,
   Activity,
+  Users2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   // Fetch real dashboard data from API
   const { data, isLoading, error } = useGetRecruiterDashboardSummaryQuery();
 
+  console.log(data);
   // Show loading and error states
   if (isLoading) {
     return <div className="p-6">Loading dashboard...</div>;
@@ -29,7 +40,7 @@ export default function Dashboard() {
   }
 
   // Destructure API data
-  const scheduledTests = data.scheduled_tests;
+  const scheduledTests = data.scheduled_tests || 10;
   const totalCandidates = data.total_candidates;
   const completedTests = data.completed_tests;
   const chartData = data.test_distribution.map((item) => ({
@@ -37,17 +48,14 @@ export default function Dashboard() {
     value: item.count,
   }));
   const recentTests = data.recent_tests;
-  const quickStats = data.quick_stats;
+  const liveTestsCount = data?.live_tests;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-2 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Overview of your testing activity and candidate engagement
-          </p>
         </div>
         <Link to="/recruiter/test/create">
           <Button className="gap-2">
@@ -58,57 +66,58 @@ export default function Dashboard() {
       </div>
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-h-min">
         {/* Main Section - 8 columns */}
         <div className="lg:col-span-8 space-y-6">
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Scheduled Tests Card */}
-            <Card className="bg-gradient-to-br from-blue-100 to-blue-300 border-0 shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold text-blue-900">
+            <Card className="">
+              <CardHeader className="flex flex-col  justify-between ">
+                <CardTitle className="text-sm font-normal text-muted-foreground flex justify-between w-full">
                   Scheduled Tests
+                  <CalendarDays className="h-5 w-5" />
                 </CardTitle>
-                <CalendarDays className="h-6 w-6 text-blue-600" />
+                {scheduledTests ? (
+                  <>
+                    <div className="text-3xl font-extrabold">
+                      {scheduledTests}
+                    </div>
+                    <p className="text-xs s font-semibold">
+                      Tests ready to start
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground italic text-xs text-center ">
+                    No Tests are scheduled
+                  </p>
+                )}
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold text-blue-900">{scheduledTests}</div>
-                <p className="text-xs text-blue-800 font-semibold">
-                  Tests ready to start
-                </p>
-              </CardContent>
             </Card>
 
             {/* Total Candidates Card */}
-            <Card className="bg-gradient-to-br from-purple-100 to-purple-300 border-0 shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold text-purple-900">
+            <Card className="">
+              <CardHeader className="flex flex-col justify-between space-y-0">
+                <CardTitle className="text-sm font-normal text-muted-foreground flex justify-between w-full">
                   Total Candidates
+                  <Users2 className="w-5 h-5" />
                 </CardTitle>
-                <Users className="h-6 w-6 text-purple-600" />
+                <div className="text-3xl font-extrabold ">
+                  {totalCandidates}
+                </div>
+                <p className="text-xs font-semibold">Across all tests</p>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold text-purple-900">{totalCandidates}</div>
-                <p className="text-xs text-purple-800 font-semibold">
-                  Across all tests
-                </p>
-              </CardContent>
             </Card>
 
             {/* Completed Tests Card */}
-            <Card className="bg-gradient-to-br from-green-100 to-green-300 border-0 shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold text-green-900">
-                  Completed Tests
+            <Card className="">
+              <CardHeader className="flex flex-col justify-between space-y-0">
+                <CardTitle className="text-sm font-normal text-muted-foreground">
+                  Live Tests
                 </CardTitle>
-                <CheckSquare className="h-6 w-6 text-green-600" />
+                <div className="text-3xl font-extrabold ">{liveTestsCount}</div>
+                <p className="text-xs font-semibold">Currently Live</p>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-extrabold text-green-900">{completedTests}</div>
-                <p className="text-xs text-green-800 font-semibold">
-                  Successfully finished
-                </p>
-              </CardContent>
             </Card>
           </div>
 
@@ -121,36 +130,10 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
+              <ScrollArea className="h-[350px]">
                 <div className="space-y-4">
                   {recentTests.map((test) => (
-                    <div
-                      key={test.test_id}
-                      className="flex items-center justify-between p-3 border rounded-lg bg-white/80 hover:bg-blue-50 transition-colors shadow-sm"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-lg text-gray-800">{test.name}</h3>
-                          <Badge
-                            className={`px-2 py-1 rounded text-xs font-semibold 
-                              ${test.status === "draft" ? "bg-gray-200 text-gray-800" : ""}
-                              ${test.status === "scheduled" ? "bg-blue-200 text-blue-800" : ""}
-                              ${test.status === "ongoing" ? "bg-yellow-200 text-yellow-800" : ""}
-                              ${test.status === "completed" ? "bg-green-200 text-green-800" : ""}
-                              ${test.status === "ended" ? "bg-red-200 text-red-800" : ""}
-                            `}
-                          >
-                            {test.status.charAt(0).toUpperCase() + test.status.slice(1)}
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-semibold">{test.test_id}</span> • <span className="font-semibold">{test.candidate_count}</span> candidates • <span className="font-semibold">{test.duration_minutes}</span>min
-                        </div>
-                      </div>
-                      <div className="text-sm font-semibold text-purple-700">
-                        {test.date}
-                      </div>
-                    </div>
+                    <RecentTestCard test={test} />
                   ))}
                 </div>
 
@@ -176,10 +159,45 @@ export default function Dashboard() {
                 <TrendingUp className="h-5 w-5" />
                 Test Distribution
               </CardTitle>
-            </CardHeader>
-            <CardContent>
+            </CardHeader>{" "}
+            <CardContent className="p-0">
               {chartData.length > 0 ? (
-                <TestDistributionChart data={chartData} />
+                <div>
+                  <TestDistributionChart data={chartData} />{" "}
+                  <div className="p-4 border-t">
+                    <div className="flex flex-wrap gap-2">
+                      {chartData.map((item, index) => {
+                        const colorMap: Record<string, string> = {
+                          ended: "#5ec269",
+                          live: "#952aa9",
+                          preparing: "#845eed",
+                          draft: "#f59e0b",
+                        };
+                        const color = colorMap[item.type] || "#6b7280";
+
+                        return (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{
+                                backgroundColor: color,
+                              }}
+                            />
+                            <span className="capitalize">{item.type}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {item.value}
+                            </Badge>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
@@ -193,49 +211,79 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-
-          {/* Quick Stats Card */}
-          <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-0 shadow-md">
-            <CardHeader>
-              <CardTitle className="font-bold text-gray-900">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-blue-700">
-                  Active Tests
-                </span>
-                <span className="font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded">
-                  {data.quick_stats.active_tests}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-orange-700">
-                  Draft Tests
-                </span>
-                <span className="font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded">
-                  {data.quick_stats.draft_tests}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-purple-700">
-                  Avg. Duration
-                </span>
-                <span className="font-bold text-purple-700 bg-purple-100 px-2 py-1 rounded">
-                  {data.quick_stats.avg_duration_minutes} min
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-green-700">
-                  Total Tests
-                </span>
-                <span className="font-bold text-green-700 bg-green-100 px-2 py-1 rounded">
-                  {data.quick_stats.total_tests}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
   );
 }
+const statusMap: Record<
+  string,
+  { label: string; icon: React.ReactNode; className: string }
+> = {
+  draft: {
+    label: "Draft",
+    icon: <CircleDashed className="h-3 w-3 mr-1" />,
+    className: "bg-gray-100 text-gray-800",
+  },
+  scheduled: {
+    label: "Scheduled",
+    icon: <CalendarCheck className="h-3 w-3 mr-1" />,
+    className: "bg-blue-100 text-blue-800",
+  },
+  live: {
+    label: "Live",
+    icon: <Clock className="h-3 w-3 mr-1" />,
+    className: "bg-yellow-100 text-yellow-800",
+  },
+  completed: {
+    label: "Completed",
+    icon: <CheckCircle className="h-3 w-3 mr-1" />,
+    className: "bg-green-100 text-green-800",
+  },
+  ended: {
+    label: "Ended",
+    icon: <Ban className="h-3 w-3 mr-1" />,
+    className: "bg-red-100 text-red-800",
+  },
+};
+
+export const RecentTestCard = ({ test }: { test: any }) => {
+  const statusInfo = statusMap[test.status] || {
+    label: test.status,
+    icon: null,
+    className: "bg-muted text-muted-foreground",
+  };
+
+  return (
+    <div
+      className="flex items-center justify-between px-3 py-2 rounded-md  hover:bg-muted transition-colors border"
+      key={test.test_id}
+    >
+      {/* Left Side: Name & Status */}
+      <div className="flex items-center gap-3 flex-1">
+        <span className="font-medium text-sm text-foreground">{test.name}</span>
+        <Badge
+          className={cn(
+            "text-xs font-medium px-2 py-0.5 rounded-sm inline-flex items-center",
+            statusInfo.className
+          )}
+        >
+          {statusInfo.icon}
+          {statusInfo.label}
+        </Badge>
+      </div>
+
+      {/* Middle Info: ID, candidates, duration */}
+      <div className="text-sm text-muted-foreground flex gap-3 whitespace-nowrap">
+        <span className="font-medium">{test.test_id}</span>
+        <span className="font-medium">{test.candidate_count} candidates</span>
+        <span className="font-medium">{test.duration_minutes} min</span>
+      </div>
+
+      {/* Right Side: Date */}
+      <div className="text-sm font-medium text-purple-700 whitespace-nowrap ml-4">
+        {test.date}
+      </div>
+    </div>
+  );
+};

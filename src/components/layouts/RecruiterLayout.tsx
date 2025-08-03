@@ -7,7 +7,7 @@ export function RecruiterLayout() {
       <SidebarProvider>
         <AppSidebar />
         <main className="flex-1 p-4 overflow-y-auto relative">
-          <div className="container pl-4 pt-1 overflow-hidden ">
+          <div className="container pl-4 pt-1 overflow-hidden">
             <Outlet />
           </div>
         </main>

@@ -1,97 +1,12 @@
-import { PieChart, Pie, Sector, Cell, ResponsiveContainer } from "recharts";
+import { ResponsivePie } from "@nivo/pie";
 
-interface ChartData {
+type InputTestDistribution = {
   type: string;
-  value: number;
-}
-
-interface TestDistributionChartProps {
-  data: ChartData[];
-}
-
-const renderActiveShape = (props: any) => {
-  const RADIAN = Math.PI / 180;
-  const {
-    cx,
-    cy,
-    midAngle,
-    innerRadius,
-    outerRadius,
-    startAngle,
-    endAngle,
-    fill,
-    payload,
-    percent,
-    value,
-  } = props;
-  const sin = Math.sin(-RADIAN * midAngle);
-  const cos = Math.cos(-RADIAN * midAngle);
-  const sx = cx + (outerRadius + 10) * cos;
-  const sy = cy + (outerRadius + 10) * sin;
-  const mx = cx + (outerRadius + 30) * cos;
-  const my = cy + (outerRadius + 30) * sin;
-  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-  const ey = my;
-  const textAnchor = cos >= 0 ? "start" : "end";
-
-  return (
-    <g>
-      <text
-        x={cx}
-        y={cy}
-        dy={8}
-        textAnchor="middle"
-        fill="#374151"
-        className="font-semibold dark:fill-gray-300"
-      >
-        {payload.type}
-      </text>
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-      />
-      <Sector
-        cx={cx}
-        cy={cy}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        innerRadius={outerRadius + 6}
-        outerRadius={outerRadius + 10}
-        fill={fill}
-      />
-      <path
-        d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
-        stroke={fill}
-        fill="none"
-      />
-      <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-      <text
-        x={ex + (cos >= 0 ? 1 : -1) * 12}
-        y={ey}
-        textAnchor={textAnchor}
-        fill="#374151"
-        className="text-sm font-medium dark:fill-gray-300"
-      >
-        {value}
-      </text>
-      <text
-        x={ex + (cos >= 0 ? 1 : -1) * 12}
-        y={ey}
-        dy={18}
-        textAnchor={textAnchor}
-        fill="#6b7280"
-        className="text-xs dark:fill-gray-400"
-      >
-        {`${(percent * 100).toFixed(1)}%`}
-      </text>
-    </g>
-  );
+  value: string;
 };
+interface TestDistributionChartProps {
+  data: InputTestDistribution[];
+}
 
 const getColorForType = (type: string): string => {
   switch (type) {
@@ -111,30 +26,67 @@ const getColorForType = (type: string): string => {
 export default function TestDistributionChart({
   data,
 }: TestDistributionChartProps) {
-  const onPieEnter = () => {
-    // Handle pie hover if needed
-  };
-
+  // Transform data to include colors
+  const transformedData = data.map((item) => ({
+    id: item.type,
+    label: item.value.toString().toUpperCase(),
+    value: item.value,
+    color: getColorForType(item.type),
+  }));
   return (
-    <div className="w-full">
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            activeShape={renderActiveShape}
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            dataKey="value"
-            onMouseEnter={onPieEnter}
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getColorForType(entry.type)} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="w-full h-72">
+      <ResponsivePie
+        data={transformedData}
+        margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+        innerRadius={0.5}
+        padAngle={5}
+        cornerRadius={1}
+        activeOuterRadiusOffset={8}
+        activeInnerRadiusOffset={8}
+        colors={(datum) => datum.data.color}
+        borderWidth={1}
+        borderColor={{
+          from: "color",
+          modifiers: [["darker", 0.2]],
+        }}
+        enableArcLabels={false}
+        enableArcLinkLabels={true}
+        arcLinkLabelsSkipAngle={10}
+        arcLinkLabelsTextColor="#374151"
+        arcLinkLabelsThickness={2}
+        arcLinkLabelsColor={{ from: "color" }}
+        arcLabelsSkipAngle={10}
+        arcLabelsTextColor={{
+          from: "color",
+          modifiers: [["darker", 2]],
+        }}
+        animate={false}
+        motionConfig="disabled"
+        tooltip={({ datum }) => (
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: datum.color }}
+              />
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {datum.label}
+              </span>
+            </div>
+            <div className="text-blue-600 dark:text-blue-400 text-sm mt-1">
+              {datum.id}
+            </div>
+            <div className="text-gray-500 dark:text-gray-400 text-xs">
+              {(
+                (Number(datum.value) /
+                  data.reduce((sum, item) => sum + Number(item.value), 0)) *
+                100
+              ).toFixed(1)}
+              %
+            </div>
+          </div>
+        )}
+      />
     </div>
   );
 }

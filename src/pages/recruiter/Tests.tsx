@@ -37,7 +37,6 @@ const transformTestData = (apiTests: ApiTest[]): TableTest[] => {
 };
 
 export default function Tests() {
-  const { data: profile } = useProfileQuery();
   const { data: testsData, isLoading, error, refetch } = useGetTestsQuery({});
 
   const [deleteTest] = useDeleteTestMutation();
