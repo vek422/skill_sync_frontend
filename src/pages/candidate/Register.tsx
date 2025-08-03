@@ -13,13 +13,10 @@ export default function CandidateRegister() {
   const handleRegister = async (data) => {
     setError(null);
     try {
-      const result = await register(data).unwrap();
-      // Registration successful, redirect to candidate dashboard
-      navigate("/candidate/");
+      await register(data).unwrap();
+      navigate("/login");
     } catch (err) {
-      // Show backend error message (including validation details)
       if (err?.data?.detail && Array.isArray(err.data.detail)) {
-        // Collect all error messages
         const messages = err.data.detail.map((d) => d.msg).filter(Boolean);
         setError(messages.join("\n"));
       } else {

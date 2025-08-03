@@ -5,9 +5,10 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { useLoginMutation, useProfileQuery } from "@/api/authApi";
 import { useAppDispatch } from "@/store";
 import { setCredentials } from "@/store/slices/authSlice";
+import { toast, useSonner } from "sonner";
 
 export default function LoginPage() {
-  const [login, { isLoading }] = useLoginMutation();
+  const [login, { isLoading, error }] = useLoginMutation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const handleLogin = async (data: { email: string; password: string }) => {
@@ -18,8 +19,6 @@ export default function LoginPage() {
       }).unwrap();
 
       console.log(`token : ${result.token} user_id:${result.user_id}`);
-
-      // Update Redux store with credentials - this will be persisted automatically
       dispatch(
         setCredentials({
           token: result?.token,
@@ -37,8 +36,15 @@ export default function LoginPage() {
       } else if (result.role === "recruiter") {
         navigate("/recruiter/dashboard");
       }
-    } catch (error) {
-      console.log("Login error:", error);
+    } catch (err) {
+      console.log("Login error:", err);
+      toast(err.data.detail, {
+        style: {
+          border: "1px solid var(--destructive)",
+          color: "var(--destructive)",
+        },
+        // classNames: { error: "" },
+      });
     }
   };
 
