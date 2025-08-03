@@ -39,6 +39,7 @@ import {
   ChevronUp,
   Activity,
   FileText,
+  RefreshCcw,
 } from "lucide-react";
 
 import SkillGraphTab from "./Component/TestPage/SkillGraphTab";
@@ -54,9 +55,12 @@ const TestPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [jobDescriptionExpanded, setJobDescriptionExpanded] = useState(false);
 
-  const { data: candidates, refetch: refetchCandidates } =
-    useGetCandidatesByTestQuery(Number(testId!), { skip: !testId });
-
+  const {
+    data: candidates,
+    refetch: refetchCandidates,
+    isLoading: candidateLoading,
+  } = useGetCandidatesByTestQuery(Number(testId!), { skip: !testId });
+  console.log(candidateLoading);
   function hasUnsavedChanges(formState, test) {
     if (!formState || !test) return false;
     const fields = [
@@ -155,22 +159,14 @@ const TestPage: React.FC = () => {
     }
   };
 
-  const [deleteTest] = useDeleteTestMutation();
-
-  const [viewResultId, setViewResultId] = useState<number | null>(null);
-  const handleViewResult = (applicationId: number) => {
-    setViewResultId(applicationId);
-  };
-  const handleCloseResultDialog = () => {
-    setViewResultId(null);
-  };
-  const {
-    data: candidateResult,
-    isLoading: resultLoading,
-    error: resultError,
-  } = useGetCandidateApplicationQuery(viewResultId ?? 0, {
-    skip: !viewResultId,
-  });
+  // const [viewResultId, setViewResultId] = useState<number | null>(null);
+  // const {
+  //   data: candidateResult,
+  //   isLoading: resultLoading,
+  //   error: resultError,
+  // } = useGetCandidateApplicationQuery(viewResultId ?? 0, {
+  //   skip: !viewResultId,
+  // });
 
   // Normalize candidates from API to a consistent structure for the table
   const normalizedCandidates = React.useMemo(() => {
@@ -186,26 +182,6 @@ const TestPage: React.FC = () => {
       key: (c["candidate_email"] || "") + (c["resume_score"] ?? idx),
     }));
   }, [candidates]);
-
-  // Sort normalized candidates by resume_score
-  const sortedCandidates = React.useMemo(() => {
-    return [...normalizedCandidates].sort((a, b) => {
-      if (
-        (a.resume_score ?? null) === null &&
-        (b.resume_score ?? null) === null
-      )
-        return 0;
-      if ((a.resume_score ?? null) === null) return 1;
-      if ((b.resume_score ?? null) === null) return -1;
-      return b.resume_score - a.resume_score;
-    });
-  }, [normalizedCandidates]);
-
-  const handleEditTest = () => {
-    if (testId) {
-      navigate(`/recruiter/test/edit/${testId}`);
-    }
-  };
 
   const handleDeleteTest = async () => {
     console.log("invoked");
@@ -232,38 +208,6 @@ const TestPage: React.FC = () => {
       }
     } else if (userInput !== null) {
       alert("Deletion cancelled. You must type 'DELETE' exactly to confirm.");
-    }
-  };
-
-  const [deleteCandidate, { isLoading: isDeletingCandidate }] =
-    useDeleteCandidateMutation();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteCandidateId, setDeleteCandidateId] = useState<number | null>(
-    null
-  );
-  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const handleDeleteCandidate = (applicationId: number) => {
-    console.log("Invoked");
-    setDeleteCandidateId(applicationId);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteCandidate = async () => {
-    if (!deleteCandidateId) return;
-    setDeleteError(null);
-    setDeleteSuccess(null);
-    try {
-      await deleteCandidate(deleteCandidateId).unwrap();
-      setDeleteSuccess("Candidate application deleted successfully.");
-      setDeleteDialogOpen(false);
-      setDeleteCandidateId(null);
-      refetchCandidates();
-    } catch (error: any) {
-      setDeleteError(
-        error?.data?.message || "Failed to delete candidate application."
-      );
     }
   };
 
@@ -529,60 +473,6 @@ const TestPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
-            {/* <Card className="bg-gradient-to-br from-green-50 to-green-200 dark:from-green-900 dark:to-green-800 border-0 shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg text-green-900 dark:text-green-200 flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-green-500" /> Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-extrabold text-green-900 dark:text-green-100">
-                  {candidates &&
-                  candidates.filter((c) => c.score !== null).length > 0
-                    ? Math.round(
-                        candidates
-                          .filter((c) => c.score !== null)
-                          .reduce((acc, c) => acc + c.score!, 0) /
-                          candidates.filter((c) => c.score !== null).length
-                      )
-                    : 0}
-                  %
-                </div>
-                <p className="text-sm text-green-700 dark:text-green-200">
-                  Average score
-                </p>
-                <div className="mt-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-green-800 dark:text-green-200">
-                      Highest:
-                    </span>
-                    <span className="font-semibold text-green-800 dark:text-green-200">
-                      {candidates && candidates.length > 0
-                        ? Math.max(...candidates.map((c) => c.score || 0))
-                        : 0}
-                      %
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-green-800 dark:text-green-200">
-                      Lowest:
-                    </span>
-                    <span className="font-semibold text-green-800 dark:text-green-200">
-                      {candidates &&
-                      candidates.filter((c) => c.score !== null).length > 0
-                        ? Math.min(
-                            ...candidates
-                              .filter((c) => c.score !== null)
-                              .map((c) => c.score!)
-                          )
-                        : 0}
-                      %
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card> */}
           </div>
         </TabsContent>{" "}
         {/* Candidates Tab */}
@@ -595,11 +485,23 @@ const TestPage: React.FC = () => {
 
           {/* Candidates Table */}
           <Card>
-            <CardHeader>
-              <CardTitle>Candidates</CardTitle>
-              <CardDescription>
-                View and manage all candidates for this test
-              </CardDescription>
+            <CardHeader className="flex justify-between">
+              <div>
+                <CardTitle>Candidates</CardTitle>
+                <CardDescription>
+                  View and manage all candidates for this test
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => refetchCandidates()}
+                disabled={candidateLoading}
+                variant={"outline"}
+              >
+                <RefreshCcw
+                  className={candidateLoading ? "animate-spin" : ""}
+                />
+                refresh
+              </Button>
             </CardHeader>
             <CardContent>
               <TestCandidateTable

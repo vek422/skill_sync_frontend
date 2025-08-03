@@ -158,7 +158,15 @@ function InterviewFocusSection({ focusAreas }: { focusAreas: string[] }) {
   );
 }
 
-const Header = ({ candidate_name, candidateGraph, percentage_score }) => {
+const Header = ({
+  candidate_name,
+  candidateGraph,
+  percentage_score,
+}: {
+  candidate_name: string;
+  candidateGraph: any[];
+  percentage_score: number;
+}) => {
   console.log("idk", candidateGraph);
   return (
     <>
@@ -174,7 +182,10 @@ const Header = ({ candidate_name, candidateGraph, percentage_score }) => {
       </Card>
 
       <SpiderChart
-        data={candidateGraph}
+        data={candidateGraph.map((item) => ({
+          ...item,
+          score: item.score * 100,
+        }))}
         title="Skill Assessment Overview"
         maxItems={8}
         height={400}

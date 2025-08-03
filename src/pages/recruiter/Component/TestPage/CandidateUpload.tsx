@@ -205,7 +205,7 @@ export default function CandidateUpload({
 
           {/* Upload Button - Show when file is selected */}
           {uploadedFile && (
-            <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg border">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
               <div>
                 <p className="text-sm font-medium">
                   Ready to upload: {uploadedFile.name}

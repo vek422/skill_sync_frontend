@@ -40,7 +40,7 @@ export default function Dashboard() {
   }
 
   // Destructure API data
-  const scheduledTests = data.scheduled_tests || 10;
+  const scheduledTests = data.scheduled_tests;
   const totalCandidates = data.total_candidates;
   const completedTests = data.completed_tests;
   const chartData = data.test_distribution.map((item) => ({

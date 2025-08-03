@@ -1,3 +1,4 @@
+import { BASE_URL } from '@/config';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface Log {
@@ -24,7 +25,7 @@ export interface FetchLogsParams {
 export const logsApi = createApi({
   reducerPath: 'logsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000',
+    baseUrl: BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       // Adjust this path if your token is stored elsewhere
       const token = (getState() as { auth?: { token?: string } }).auth?.token;

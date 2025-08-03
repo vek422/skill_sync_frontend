@@ -17,7 +17,8 @@ import {
 } from '../store/slices/assessmentSlice';
 import { getMessageHandler } from './websocket-utils/messageHandler';
 import { type WebSocketMessage } from './websocket-utils/messageHandler';
-
+import { WS_URL } from '@/config';
+console.log(WS_URL)
 interface UseAssessmentWebSocketOptions {
     testId: number;
     autoStart?: boolean;
@@ -31,7 +32,7 @@ export const useAssessmentWebSocket = ({
     autoStart = true,
     maxReconnectAttempts = 5,
     reconnectDelay = 1000,
-    websocketUrl = 'ws://localhost:8000'
+    websocketUrl = WS_URL
 }: UseAssessmentWebSocketOptions) => {
     const dispatch = useAppDispatch();
     const { token } = useAppSelector(state => state.auth); const assessmentState = useAppSelector(state => state.assessment);

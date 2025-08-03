@@ -166,13 +166,13 @@ export default function ChatAssessmentInterface() {
   return (
     <div className="w-screen h-screen flex justify-center bg-gradient-to-br  overflow-hidden">
       <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-        <Button
+        {/* <Button
           onClick={() => {
             sendDebugMessage();
           }}
         >
           debug
-        </Button>
+        </Button> */}
         <Header
           progress={progress}
           testId={id}
