@@ -33,7 +33,11 @@ export default function ChatAssessmentInterface() {
     autoStart: false,
   });
   // Show violation warning
-  const showViolationWarning = violationCount > 0 && violationCount < 10 && assessmentStarted && !assessmentCompleted;
+  const showViolationWarning =
+    violationCount > 0 &&
+    violationCount < 10 &&
+    assessmentStarted &&
+    !assessmentCompleted;
 
   // auto scroll logic
   useEffect(() => {
@@ -192,7 +196,8 @@ export default function ChatAssessmentInterface() {
               </span>
             </div>
             <p className="text-xs text-yellow-700 mt-1">
-              Please stay in fullscreen mode and don't switch tabs. Your assessment will be auto-submitted at 10 violations.
+              Please stay in fullscreen mode and don't switch tabs. Your
+              assessment will be auto-submitted at 10 violations.
             </p>
           </div>
         )}

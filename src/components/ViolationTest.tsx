@@ -1,26 +1,28 @@
-import React from 'react';
-import { useViolationTracker } from '@/hooks/useViolationTracker';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from "react";
+import { useViolationTracker } from "@/hooks/useViolationTracker";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ViolationTestProps {
   assessmentId: string;
 }
 
-export const ViolationTest: React.FC<ViolationTestProps> = ({ assessmentId }) => {
+export const ViolationTest: React.FC<ViolationTestProps> = ({
+  assessmentId,
+}) => {
   const {
     violations,
     enterFullscreen,
     exitFullscreen,
     isFullscreen,
-    isMaxViolationsReached
+    isMaxViolationsReached,
   } = useViolationTracker({
     assessmentId,
     enableTracking: true,
     maxViolations: 5, // Lower limit for testing
     onMaxViolationsReached: () => {
-      alert('Max violations reached! Assessment would be submitted.');
-    }
+      alert("Max violations reached! Assessment would be submitted.");
+    },
   });
 
   return (
@@ -30,20 +32,28 @@ export const ViolationTest: React.FC<ViolationTestProps> = ({ assessmentId }) =>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p><strong>Violation Count:</strong> {violations.count} / {violations.maxViolations}</p>
-          <p><strong>Is Fullscreen:</strong> {isFullscreen ? 'Yes' : 'No'}</p>
-          <p><strong>Max Violations Reached:</strong> {isMaxViolationsReached ? 'Yes' : 'No'}</p>
+          <p>
+            <strong>Violation Count:</strong> {violations.count} /{" "}
+            {violations.maxViolations}
+          </p>
+          <p>
+            <strong>Is Fullscreen:</strong> {isFullscreen ? "Yes" : "No"}
+          </p>
+          <p>
+            <strong>Max Violations Reached:</strong>{" "}
+            {isMaxViolationsReached ? "Yes" : "No"}
+          </p>
         </div>
-        
+
         <div className="space-y-2">
-          <Button 
+          <Button
             onClick={enterFullscreen}
             disabled={isFullscreen}
             className="w-full"
           >
             Enter Fullscreen
           </Button>
-          <Button 
+          <Button
             onClick={exitFullscreen}
             disabled={!isFullscreen}
             variant="outline"
@@ -61,9 +71,18 @@ export const ViolationTest: React.FC<ViolationTestProps> = ({ assessmentId }) =>
             ) : (
               violations.violations.slice(-5).map((violation, index) => (
                 <div key={index} className="mb-1 p-2 bg-red-50 rounded">
-                  <div><strong>Type:</strong> {violation.reason}</div>
-                  <div><strong>Time:</strong> {new Date(violation.timestamp).toLocaleTimeString()}</div>
-                  {violation.details && <div><strong>Details:</strong> {violation.details}</div>}
+                  <div>
+                    <strong>Type:</strong> {violation.reason}
+                  </div>
+                  <div>
+                    <strong>Time:</strong>{" "}
+                    {new Date(violation.timestamp).toLocaleTimeString()}
+                  </div>
+                  {violation.details && (
+                    <div>
+                      <strong>Details:</strong> {violation.details}
+                    </div>
+                  )}
                 </div>
               ))
             )}

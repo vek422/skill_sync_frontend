@@ -41,9 +41,9 @@ export const getMessageHandler = (context: MessageHandlerContext) => {
 
     const messageHandlers: Record<string, MessageHandler> = {
         auth_success: (message: WebSocketMessage) => {
-            if (message?.data.recovered_assessment) {
-                dispatch(addChatMessage(generateChatMessage('system', 'It appears you already have started the assessment, Recovering your assessment, Make sure to have stable internet connection result in multiple voilation will automatically submit the test')))
-            }
+            // if (message?.data.recovered_assessment) {
+            //     dispatch(addChatMessage(generateChatMessage('system', 'It appears you already have started the assessment, Recovering your assessment, Make sure to have stable internet connection result in multiple voilation will automatically submit the test')))
+            // }
             dispatch(setConnectionEstablished({
                 connection_id: message.data.connection_id,
                 user_id: message.data.user_id,

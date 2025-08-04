@@ -34,7 +34,8 @@ export const useAssessmentWebSocket = ({
     maxReconnectAttempts = 5,
     reconnectDelay = 1000,
     websocketUrl = WS_URL
-}: UseAssessmentWebSocketOptions) => {    const dispatch = useAppDispatch();
+}: UseAssessmentWebSocketOptions) => {
+    const dispatch = useAppDispatch();
     const { token } = useAppSelector(state => state.auth);
     const assessmentState = useAppSelector(state => state.assessment);
     const [processMessage, setProcessMessage] = useState("");
@@ -47,18 +48,18 @@ export const useAssessmentWebSocket = ({
     // Auto-complete assessment on max violations
     const handleMaxViolationsReached = useCallback(() => {
         console.warn('Maximum violations reached - auto-completing assessment');
-        
+
         // Send finalize message
         if (websocketRef.current?.readyState === WebSocket.OPEN) {
             websocketRef.current.send(JSON.stringify({
                 type: 'complete_assessment',
-                data: { 
+                data: {
                     reason: 'max_violations_reached'
                 },
                 timestamp: new Date().toISOString()
             }));
         }
-          // Add system message
+        // Add system message
         const systemMessage = {
             id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             type: 'system' as const,
@@ -134,7 +135,7 @@ export const useAssessmentWebSocket = ({
             processMessageTimeoutRef.current = window.setTimeout(() => {
                 setProcessMessage("");
                 processMessageTimeoutRef.current = null;
-            }, 2000);
+            }, 5000);
         }
     }
 
@@ -308,9 +309,9 @@ export const useAssessmentWebSocket = ({
 
     const completeAssessmentRequest = useCallback(() => {
         sendMessage({ type: 'complete_assessment' });
-    }, [sendMessage]);    const startAssessmentSession = useCallback(async () => {
+    }, [sendMessage]); const startAssessmentSession = useCallback(async () => {
         dispatch(startAssessment({ test_id: testId }));
-        
+
         // Enter fullscreen mode
         const fullscreenSuccess = await enterFullscreen();
         if (!fullscreenSuccess) {
@@ -320,12 +321,12 @@ export const useAssessmentWebSocket = ({
                 recoverable: true
             }));
         }
-        
+
         sendMessage({
             type: 'start_assessment',
             data: { test_id: testId }
         });
-    }, [dispatch, sendMessage, testId, enterFullscreen]);    const resetAssessmentSession = useCallback(() => {
+    }, [dispatch, sendMessage, testId, enterFullscreen]); const resetAssessmentSession = useCallback(() => {
         dispatch(resetAssessment());
         dispatch(clearChatHistory());
         stopTracking();
