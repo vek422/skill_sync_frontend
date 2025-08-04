@@ -5,6 +5,7 @@ import storage from "redux-persist/lib/storage";
 import { combineReducers } from "@reduxjs/toolkit";
 import { authReducer } from "./slices/authSlice";
 import { assessmentReducer } from "./slices/assessmentSlice";
+import violationsReducer from "./slices/violationsSlice";
 import { apiSlice } from "./apiSlice";
 import { logsApi } from "../api/logsApi";
 import { candidatesApi } from "../api/candidatesApi";
@@ -14,6 +15,7 @@ import { setAuthTokenGetter } from "../api";
 const rootReducer = combineReducers({
     auth: authReducer,
     assessment: assessmentReducer,
+    violations: violationsReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
     [logsApi.reducerPath]: logsApi.reducer,
     [candidatesApi.reducerPath]: candidatesApi.reducer,
@@ -22,7 +24,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     storage,
     key: "root",
-    whitelist: ["auth"]
+    whitelist: ["auth", "violations"]
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

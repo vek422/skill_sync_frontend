@@ -26,12 +26,19 @@ export default function ChatAssessmentInterface() {
     hasError,
     chatHistory,
     interactionType,
-    sendDebugMessage,
     processMessage,
+    violationCount,
   } = useAssessmentWebSocket({
     testId: id ? parseInt(id) : 0,
     autoStart: false,
   });
+  // Show violation warning
+  const showViolationWarning =
+    violationCount > 0 &&
+    violationCount < 10 &&
+    assessmentStarted &&
+    !assessmentCompleted;
+
   // auto scroll logic
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -116,7 +123,7 @@ export default function ChatAssessmentInterface() {
     return (
       <div className="w-screen h-screen flex justify-center bg-gradient-to-br from-gray-50 to-blue-50 overflow-hidden">
         <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-          <Header />
+          <Header testName={test_name || ""} />
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <h1 className="font-bold text-2xl">Connecting...</h1>
             <div className="text-sm text-gray-600">
@@ -143,7 +150,7 @@ export default function ChatAssessmentInterface() {
     return (
       <div className="w-screen h-screen flex justify-center bg-gradient-to-br overflow-hidden">
         <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-          <Header />
+          <Header testName={test_name || ""} />
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <h1 className="font-bold text-3xl">Ready to Start Assessment?</h1>
             <p className="text-center max-w-md">
@@ -179,6 +186,21 @@ export default function ChatAssessmentInterface() {
           connectionStatus={connectionStatus}
           testName={test_name || ""}
         />
+
+        {showViolationWarning && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mx-6">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+              <span className="text-sm font-medium text-yellow-800">
+                Violation Warning: {violationCount}/10
+              </span>
+            </div>
+            <p className="text-xs text-yellow-700 mt-1">
+              Please stay in fullscreen mode and don't switch tabs. Your
+              assessment will be auto-submitted at 10 violations.
+            </p>
+          </div>
+        )}
 
         <ScrollArea ref={scrollAreaRef} className="flex-1 p-6 pt-0  h-[40vh]">
           <div className="flex flex-col gap-4 pb-20">
