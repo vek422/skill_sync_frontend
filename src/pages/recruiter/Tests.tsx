@@ -4,40 +4,14 @@ import { Link } from "react-router-dom";
 import { TestsDataTable } from "@/components/TestsTable/data-table";
 import { createColumns } from "@/components/TestsTable/columns";
 import { useGetTestsQuery, useDeleteTestMutation } from "@/api/testApi";
-import { useProfileQuery } from "@/api/authApi";
-import { type Test as TableTest } from "@/components/TestTable/columns";
-import { type Test as ApiTest } from "@/api/testApi";
-import { Card, CardContent } from "@/components/ui/card";
 
-// Transform API test data to table format (map status to allowed values)
-const mapStatus = (status: string): TableTest["test_status"] => {
-  switch (status) {
-    case "draft":
-      return "draft";
-    case "scheduled":
-      return "scheduled";
-    case "ongoing":
-    case "published":
-      return "ongoing";
-    case "completed":
-      return "completed";
-    default:
-      return "draft";
-  }
-};
-const transformTestData = (apiTests: ApiTest[]): TableTest[] => {
-  return apiTests.map((test) => ({
-    test_id: test.test_id.toString(),
-    test_name: test.test_name,
-    test_status: mapStatus(test.status),
-    test_created_at: test.created_at,
-    test_duration: test.time_limit_minutes || 60,
-    total_candidate: 0,
-  }));
-};
+import { Card, CardContent } from "@/components/ui/card";
+import { differenceInMinutes, parseISO } from "date-fns";
 
 export default function Tests() {
   const { data: testsData, isLoading, error, refetch } = useGetTestsQuery({});
+
+  console.log(testsData);
 
   const [deleteTest] = useDeleteTestMutation();
   const handleDelete = async (testId: string) => {
@@ -81,8 +55,12 @@ export default function Tests() {
         test_name: test.test_name ?? "",
         test_status: test.status ?? "",
         test_created_at: test.created_at ?? "",
-        test_duration: test.time_limit_minutes ?? 0,
-        total_candidate: 0,
+        test_duration:
+          differenceInMinutes(
+            new Date(test.assessment_deadline),
+            new Date(test.scheduled_at)
+          ) ?? 0,
+        total_candidate: test.total_candidates ?? 0,
       }))
     : [];
 

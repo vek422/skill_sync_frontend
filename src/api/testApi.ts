@@ -115,7 +115,7 @@ const testApi = apiSlice.injectEndpoints({
     // Get tests created by current recruiter only - backend filters by auth token
     getTests: builder.query<Test[], { page?: number; per_page?: number }>({
       query: ({ page = 1, per_page = 100 } = {}) => ({
-        url: `/tests/?skip=${(page - 1) * per_page}&limit=${per_page}`,  // Backend automatically filters by current user
+        url: `/tests/?skip=${(page - 1) * per_page}&limit=${per_page}`,
         method: 'GET'
       }),
       providesTags: ["Tests"]

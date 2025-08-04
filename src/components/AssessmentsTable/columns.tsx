@@ -10,7 +10,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Eye, MoreHorizontal, ArrowUpDown } from "lucide-react";
 import { type Assessment } from "@/api/assessmentApi";
-import { format, parseISO, differenceInSeconds, isValid } from "date-fns";
+import {
+  format,
+  parseISO,
+  differenceInSeconds,
+  isValid,
+  differenceInMinutes,
+} from "date-fns";
 
 const getStatusBadge = (status: string) => {
   const variants = {
@@ -47,14 +53,12 @@ const calculateTimeDifference = (
   if (!startTime || !endTime) return 0;
 
   try {
-    const start =
-      typeof startTime === "string" ? parseISO(startTime) : new Date(startTime);
-    const end =
-      typeof endTime === "string" ? parseISO(endTime) : new Date(endTime);
-
-    if (!isValid(start) || !isValid(end)) return 0;
-
-    const diff = differenceInSeconds(end, start);
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    console.log(start);
+    console.log(end);
+    const diff = differenceInMinutes(end, start);
+    console.log(diff);
     return diff > 0 ? diff : 0;
   } catch {
     return 0;
@@ -178,14 +182,13 @@ export const columns: ColumnDef<Assessment>[] = [
       ) {
         return <span className="text-muted-foreground">-</span>;
       }
-
-      const timeDifferenceSeconds = calculateTimeDifference(
+      console.log(assessment.created_at, assessment.end_time);
+      const timeDiffrenceInMinutes = calculateTimeDifference(
         assessment.created_at,
         assessment.end_time
       );
-      return (
-        <div className="font-medium">{formatTime(timeDifferenceSeconds)}</div>
-      );
+      console.log("time", timeDiffrenceInMinutes);
+      return <div className="font-medium">{timeDiffrenceInMinutes}min</div>;
     },
   },
   {
