@@ -105,7 +105,8 @@ export const useAssessmentWebSocket = ({
             options,
             metadata
         };
-    }, []); const updateProcesMessage = (message: string) => {
+    }, []);
+    const updateProcesMessage = (message: string) => {
         // Clear any existing timeout
         if (processMessageTimeoutRef.current) {
             clearTimeout(processMessageTimeoutRef.current);
@@ -309,7 +310,8 @@ export const useAssessmentWebSocket = ({
 
     const completeAssessmentRequest = useCallback(() => {
         sendMessage({ type: 'complete_assessment' });
-    }, [sendMessage]); const startAssessmentSession = useCallback(async () => {
+    }, [sendMessage]);
+    const startAssessmentSession = useCallback(async () => {
         dispatch(startAssessment({ test_id: testId }));
 
         // Enter fullscreen mode
@@ -381,6 +383,7 @@ export const useAssessmentWebSocket = ({
     }, [connect, token, testId]);    // Return hook interface
     return {
         // State
+        assessmentState,
         connectionStatus: assessmentState.connection_status,
         assessmentStarted: assessmentState.assessment_started,
         assessmentCompleted: assessmentState.assessment_completed,
@@ -388,7 +391,7 @@ export const useAssessmentWebSocket = ({
         progress: assessmentState.progress,
         currentError: assessmentState.current_error,
         reconnectAttempts: assessmentState.reconnect_attempts,
-        test_name: assessmentState.test_name,
+
         processMessage,
         setProcessMessage,
         // Chat state

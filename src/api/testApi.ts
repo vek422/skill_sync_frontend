@@ -191,7 +191,8 @@ const testApi = apiSlice.injectEndpoints({
         message: string;
       },
       {
-        test_id: number; data: {
+        test_id: number;
+        data: {
           high_priority_questions: number;
           medium_priority_questions: number;
           low_priority_questions: number;

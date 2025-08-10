@@ -5,14 +5,8 @@ import {
   useGetTestByIdQuery,
   useUpdateTestMutation,
   useScheduleTestMutation,
-  useDeleteTestMutation,
-  useAddCandidateToAssessmentMutation,
 } from "@/api/testApi";
-import {
-  useGetCandidatesByTestQuery,
-  useDeleteCandidateMutation,
-  useGetCandidateApplicationQuery,
-} from "@/api/candidateApi";
+import { useGetCandidatesByTestQuery } from "@/api/candidateApi";
 
 import {
   Card,
@@ -90,6 +84,7 @@ const TestPage: React.FC = () => {
     isLoading: testLoading,
     error: testError,
   } = useGetTestByIdQuery(Number(testId), { skip: !testId });
+  console.log(test);
   const [updateTest, { isLoading: isUpdatingTest }] = useUpdateTestMutation();
   const [editMode, setEditMode] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);

@@ -32,7 +32,7 @@ export interface MessageHandlerContext {
         type: ChatMessage['type'],
         content: string,
         options?: any
-    ) => ChatMessage
+    ) => ChatMessage,
     assessmentState: any,
 }
 type MessageHandler = (message: WebSocketMessage) => void
@@ -41,9 +41,6 @@ export const getMessageHandler = (context: MessageHandlerContext) => {
 
     const messageHandlers: Record<string, MessageHandler> = {
         auth_success: (message: WebSocketMessage) => {
-            // if (message?.data.recovered_assessment) {
-            //     dispatch(addChatMessage(generateChatMessage('system', 'It appears you already have started the assessment, Recovering your assessment, Make sure to have stable internet connection result in multiple voilation will automatically submit the test')))
-            // }
             dispatch(setConnectionEstablished({
                 connection_id: message.data.connection_id,
                 user_id: message.data.user_id,
@@ -51,11 +48,14 @@ export const getMessageHandler = (context: MessageHandlerContext) => {
             }));
         },
         assessment_started: (message: WebSocketMessage) => {
+            console.log("from received_message : ", message.data.test_details.name)
+            console.log("from  ", message.data.test_details.end_time)
             dispatch(setAssessmentStarted({
                 assessment_id: message.data.assessment_id,
                 thread_id: message.data.thread_id,
-                test_id: message.data.test_id,
-                test_name: message.data.test_name,
+                test_id: message.data?.test_id,
+                test_name: message.data?.test_details?.name,
+                end_time: message.data?.test_details?.end_time,
             }));
             const welcomeMessage = generateChatMessage(
                 'system',
@@ -165,6 +165,12 @@ export const getMessageHandler = (context: MessageHandlerContext) => {
             }
         },
         system_message: (message: WebSocketMessage) => {
+            if (message?.data?.is_time_up) {
+                console.log("Time Out Received")
+                addChatMessage(generateChatMessage('system', "Timeout Submitting the assessment!!"))
+                dispatch(completeAssessment())
+                return
+            }
             dispatch(addErrorLog({
                 type: 'system_message',
                 message: message.data.message,

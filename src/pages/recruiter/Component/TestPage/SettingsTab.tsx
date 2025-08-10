@@ -157,13 +157,9 @@ export default function SettingsTab({
                 <div className="mb-8">
                   <QuestionCountSettings
                     testId={test.test_id}
-                    highPriorityNodes={test.high_priority_nodes || 0}
-                    mediumPriorityNodes={test.medium_priority_nodes || 0}
-                    lowPriorityNodes={test.low_priority_nodes || 0}
-                    initialHigh={test.high_priority_questions || 0}
-                    initialMedium={test.medium_priority_questions || 0}
-                    initialLow={test.low_priority_questions || 0}
-                    initialTimeLimit={test.time_limit_minutes || 0}
+                    high={test.high_priority_questions || 0}
+                    medium={test.medium_priority_questions || 0}
+                    low={test.low_priority_questions || 0}
                   />
                 </div>
               )}

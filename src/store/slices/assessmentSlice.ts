@@ -181,6 +181,7 @@ const assessmentSlice = createSlice({
             thread_id: string;
             test_id: number;
             test_name: string;
+            end_time: string;
         }>) {
             state.assessment_started = true;
             state.assessment_id = action.payload.assessment_id;
@@ -188,6 +189,7 @@ const assessmentSlice = createSlice({
             state.test_id = action.payload.test_id;
             state.current_error = null;
             state.test_name = action.payload.test_name
+            state.end_time = action.payload.end_time
             state.last_message_timestamp = new Date().toISOString();
         },
 
@@ -231,9 +233,9 @@ const assessmentSlice = createSlice({
             state.current_error = null;
             state.last_message_timestamp = new Date().toISOString();
         },
-        updateTestName(state, action: PayloadAction<string>) {
-            state.test_name = action.payload
-        },
+        // updateTestName(state, action: PayloadAction<string>) {
+        //     state.test_name = action.payload
+        // },
         // Answer management
         submitAnswer(state, action: PayloadAction<{
             question_id: string;
@@ -396,7 +398,6 @@ export const {
     setInteractionType,
     updateChatHistory,
     clearChatHistory,
-    updateTestName
 } = assessmentSlice.actions;
 
 export const assessmentReducer = assessmentSlice.reducer;

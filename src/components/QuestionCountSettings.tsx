@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -6,179 +6,135 @@ import { useUpdateQuestionCountsMutation } from "@/api/testApi";
 
 interface QuestionCountSettingsProps {
   testId: number;
-  highPriorityNodes: number;
-  mediumPriorityNodes: number;
-  lowPriorityNodes: number;
-  initialHigh: number;
-  initialMedium: number;
-  initialLow: number;
-  initialTimeLimit: number;
+  high: number; // current high priority questions from backend
+  medium: number; // current medium priority questions
+  low: number; // current low priority questions
 }
 
-const getMinQuestions = (nodes: number, perNode: number) => nodes * perNode;
+const MIN_HIGH = 5;
+const MIN_MEDIUM = 3;
+const MIN_LOW = 3;
 
 export const QuestionCountSettings: React.FC<QuestionCountSettingsProps> = ({
   testId,
-  highPriorityNodes,
-  mediumPriorityNodes,
-  lowPriorityNodes,
-  initialHigh,
-  initialMedium,
-  initialLow,
-  initialTimeLimit,
+  high: highProp,
+  medium: mediumProp,
+  low: lowProp,
 }) => {
-  const [high, setHigh] = useState(initialHigh);
-  const [medium, setMedium] = useState(initialMedium);
-  const [low, setLow] = useState(initialLow);
+  const [high, setHigh] = useState(Math.max(highProp || 0, MIN_HIGH));
+  const [medium, setMedium] = useState(Math.max(mediumProp || 0, MIN_MEDIUM));
+  const [low, setLow] = useState(Math.max(lowProp || 0, MIN_LOW));
   const [updateQuestionCounts, { isLoading, error, data }] =
     useUpdateQuestionCountsMutation();
 
-  // Minimums
-  const minHigh = getMinQuestions(highPriorityNodes, 5);
-  const minMedium = getMinQuestions(mediumPriorityNodes, 3);
-  const minLow = getMinQuestions(lowPriorityNodes, 3);
-
-  // Per-node
-  const perNodeHigh = highPriorityNodes
-    ? Math.floor(high / highPriorityNodes)
-    : 0;
-  const perNodeMedium = mediumPriorityNodes
-    ? Math.floor(medium / mediumPriorityNodes)
-    : 0;
-  const perNodeLow = lowPriorityNodes ? Math.floor(low / lowPriorityNodes) : 0;
-  console.log({ perNodeHigh, perNodeLow, perNodeMedium });
-  // Total and time
-  const totalQuestions = high + medium + low;
-  const timeLimitMinutes = useMemo(() => {
-    return Math.ceil((high * 90 + medium * 60 + low * 45) / 60);
-  }, [high, medium, low]);
-
-  const handleChange = (
-    setter: (n: number) => void,
+  const adjust = (
+    setter: React.Dispatch<React.SetStateAction<number>>,
     value: number,
     min: number
-  ) => {
-    setter(Math.max(min, value));
-  };
+  ) => setter(Math.max(min, value));
 
   const handleSave = async () => {
     await updateQuestionCounts({
       test_id: testId,
       data: {
-        high_priority_questions: perNodeHigh,
-        medium_priority_questions: perNodeMedium,
-        low_priority_questions: perNodeLow,
-        total_questions: totalQuestions,
-        time_limit_minutes: timeLimitMinutes,
+        high_priority_questions: high,
+        medium_priority_questions: medium,
+        low_priority_questions: low,
+        total_questions: high + medium + low, // required by TS type (backend ignores)
+        time_limit_minutes: 0, // placeholder
       },
     });
   };
 
   return (
     <div className="p-4 border rounded-lg bg-muted flex flex-col gap-6 max-w-xl">
+      {/* High */}
       <div className="flex flex-col gap-2">
         <Label>High Priority Questions</Label>
         <div className="flex items-center gap-2">
           <Button
             size="icon"
             variant="outline"
-            onClick={() =>
-              handleChange(setHigh, high - highPriorityNodes, minHigh)
-            }
+            onClick={() => adjust(setHigh, high - 1, MIN_HIGH)}
           >
             -
           </Button>
           <Input
             type="number"
             value={high}
-            min={minHigh}
-            readOnly
-            className="w-20 text-center"
+            min={MIN_HIGH}
+            onChange={(e) => adjust(setHigh, Number(e.target.value), MIN_HIGH)}
+            className="w-24 text-center"
           />
           <Button
             size="icon"
             variant="outline"
-            onClick={() => setHigh(high + highPriorityNodes)}
+            onClick={() => setHigh(high + 1)}
           >
             +
           </Button>
           <span className="ml-2 text-xs text-muted-foreground">
-            min: {minHigh} | per node: {perNodeHigh}
+            min: {MIN_HIGH}
           </span>
         </div>
       </div>
+      {/* Medium */}
       <div className="flex flex-col gap-2">
         <Label>Medium Priority Questions</Label>
         <div className="flex items-center gap-2">
           <Button
             size="icon"
             variant="outline"
-            onClick={() =>
-              handleChange(setMedium, medium - mediumPriorityNodes, minMedium)
-            }
+            onClick={() => adjust(setMedium, medium - 1, MIN_MEDIUM)}
           >
             -
           </Button>
           <Input
             type="number"
             value={medium}
-            min={minMedium}
-            readOnly
-            className="w-20 text-center"
+            min={MIN_MEDIUM}
+            onChange={(e) =>
+              adjust(setMedium, Number(e.target.value), MIN_MEDIUM)
+            }
+            className="w-24 text-center"
           />
           <Button
             size="icon"
             variant="outline"
-            onClick={() => setMedium(medium + mediumPriorityNodes)}
+            onClick={() => setMedium(medium + 1)}
           >
             +
           </Button>
           <span className="ml-2 text-xs text-muted-foreground">
-            min: {minMedium} | per node: {perNodeMedium}
+            min: {MIN_MEDIUM}
           </span>
         </div>
       </div>
+      {/* Low */}
       <div className="flex flex-col gap-2">
         <Label>Low Priority Questions</Label>
         <div className="flex items-center gap-2">
           <Button
             size="icon"
             variant="outline"
-            onClick={() => handleChange(setLow, low - lowPriorityNodes, minLow)}
+            onClick={() => adjust(setLow, low - 1, MIN_LOW)}
           >
             -
           </Button>
           <Input
             type="number"
             value={low}
-            min={minLow}
-            readOnly
-            className="w-20 text-center"
+            min={MIN_LOW}
+            onChange={(e) => adjust(setLow, Number(e.target.value), MIN_LOW)}
+            className="w-24 text-center"
           />
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => setLow(low + lowPriorityNodes)}
-          >
+          <Button size="icon" variant="outline" onClick={() => setLow(low + 1)}>
             +
           </Button>
           <span className="ml-2 text-xs text-muted-foreground">
-            min: {minLow} | per node: {perNodeLow}
+            min: {MIN_LOW}
           </span>
         </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label>Total Questions</Label>
-        <Input type="number" value={totalQuestions} readOnly className="w-24" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label>Time Limit (minutes)</Label>
-        <Input
-          type="number"
-          value={timeLimitMinutes}
-          readOnly
-          className="w-24"
-        />
       </div>
       <Button onClick={handleSave} disabled={isLoading} className="w-fit">
         {isLoading ? "Saving..." : "Save Settings"}
@@ -188,7 +144,11 @@ export const QuestionCountSettings: React.FC<QuestionCountSettingsProps> = ({
           {(error as any)?.data?.message || "Failed to update."}
         </div>
       )}
-      {data && <div className="text-green-600 text-sm">{data.message}</div>}
+      {data && (
+        <div className="text-green-600 text-sm">
+          {(data as any)?.message || "Updated"}
+        </div>
+      )}
     </div>
   );
 };

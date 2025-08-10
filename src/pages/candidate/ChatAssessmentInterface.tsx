@@ -5,6 +5,7 @@ import { useAssessmentWebSocket } from "@/hooks/useAssessmentWebSocket";
 import { useParams } from "react-router-dom";
 import { ChatMessageComponent } from "./components/ChatMessages";
 import SubmitTest from "./components/SubmitTest";
+import Timer from "./components/Timer";
 
 export default function ChatAssessmentInterface() {
   const { id } = useParams<{ id: string }>();
@@ -12,7 +13,7 @@ export default function ChatAssessmentInterface() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const {
-    test_name,
+    assessmentState,
     connectionStatus,
     assessmentStarted,
     assessmentCompleted,
@@ -32,6 +33,7 @@ export default function ChatAssessmentInterface() {
     testId: id ? parseInt(id) : 0,
     autoStart: false,
   });
+  console.log(assessmentState);
   // Show violation warning
   const showViolationWarning =
     violationCount > 0 &&
@@ -78,7 +80,10 @@ export default function ChatAssessmentInterface() {
     return (
       <div className="w-screen h-screen flex justify-center  overflow-hidden">
         <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-          <Header testName={test_name || ""} />
+          <Header
+            testName={assessmentState.test_name || ""}
+            end_time={assessmentState.end_time || ""}
+          />
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <h1 className="font-bold text-2xl text-red-600">
               Connection Error
@@ -97,7 +102,11 @@ export default function ChatAssessmentInterface() {
     return (
       <div className="w-screen h-screen flex justify-center bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
         <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-          <Header testName={test_name || ""} testId={id} />
+          <Header
+            end_time={assessmentState.end_time || ""}
+            testName={assessmentState.test_name || ""}
+            testId={id}
+          />
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <h1 className="font-bold text-3xl text-green-600">
               Assessment Completed!
@@ -123,7 +132,11 @@ export default function ChatAssessmentInterface() {
     return (
       <div className="w-screen h-screen flex justify-center bg-gradient-to-br from-gray-50 to-blue-50 overflow-hidden">
         <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-          <Header testName={test_name || ""} />
+          <Header
+            end_time={assessmentState.end_time || ""}
+            testName={assessmentState.test_name || ""}
+            testId={id}
+          />
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <h1 className="font-bold text-2xl">Connecting...</h1>
             <div className="text-sm text-gray-600">
@@ -150,7 +163,11 @@ export default function ChatAssessmentInterface() {
     return (
       <div className="w-screen h-screen flex justify-center bg-gradient-to-br overflow-hidden">
         <div className="flex flex-col gap-2 w-[80%] max-w-4xl">
-          <Header testName={test_name || ""} />
+          <Header
+            end_time={assessmentState.end_time || ""}
+            testName={assessmentState.test_name || ""}
+            testId={id}
+          />
           <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
             <h1 className="font-bold text-3xl">Ready to Start Assessment?</h1>
             <p className="text-center max-w-md">
@@ -184,7 +201,8 @@ export default function ChatAssessmentInterface() {
           progress={progress}
           testId={id}
           connectionStatus={connectionStatus}
-          testName={test_name || ""}
+          testName={assessmentState.test_name || ""}
+          end_time={assessmentState.end_time || ""}
         />
 
         {showViolationWarning && (
@@ -253,11 +271,13 @@ const Header = ({
   testId,
   connectionStatus,
   testName,
+  end_time,
 }: {
   progress?: number;
   testId?: string;
   connectionStatus?: string;
   testName: string;
+  end_time: string;
 }) => {
   return (
     <div className="w-full bg-background border-bp-4 flex justify-between items-center">
@@ -279,6 +299,7 @@ const Header = ({
           </div>
         )}
       </div>
+      {end_time && <Timer end_time={new Date(end_time)} />}
       {progress !== undefined && (
         <div className="text-right">
           <div className="text-sm mb-1">

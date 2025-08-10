@@ -1,3 +1,4 @@
+import { BASE_URL } from '@/config';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface Candidate {
@@ -19,10 +20,11 @@ export interface CandidateTest {
   [key: string]: any;
 }
 
+
 export const candidatesApi = createApi({
   reducerPath: 'candidatesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:8000',
+    baseUrl: BASE_URL,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as { auth?: { token?: string } }).auth?.token;
       if (token) {
