@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import {
   useGetCandidatesQuery,
   useGetCandidateTestsQuery,
-} from "../../api/candidatesApi";
+} from "@/api/candidateApi";
+import type { Candidate } from "@/api/candidateApi";
+import { candidateColumns } from "@/components/CandidatesTable/columns";
+import { DataTable } from "@/components/CandidatesTable/data-table";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +15,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DataTable } from "../../components/CandidatesTable/data-table";
-import { candidateColumns } from "../../components/CandidatesTable/columns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const CandidatesPage: React.FC = () => {
@@ -41,10 +42,12 @@ const CandidatesPage: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <DataTable
+      <DataTable<Candidate, unknown>
         columns={candidateColumns}
-        data={filteredCandidates}
-        onRowClick={setSelectedCandidate}
+        data={filteredCandidates as Candidate[]}
+        onRowClick={(row) =>
+          setSelectedCandidate({ user_id: row.user_id, name: row.name })
+        }
         onSearchChange={setSearch}
         searchPlaceholder="Search candidates..."
       />

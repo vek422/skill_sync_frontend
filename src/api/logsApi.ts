@@ -1,5 +1,4 @@
-import { BASE_URL } from '@/config';
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { apiSlice } from '@/store/apiSlice';
 
 export interface Log {
   id: number;
@@ -22,35 +21,29 @@ export interface FetchLogsParams {
   source?: string;
 }
 
-export const logsApi = createApi({
-  reducerPath: 'logsApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      // Adjust this path if your token is stored elsewhere
-      const token = (getState() as { auth?: { token?: string } }).auth?.token;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+const extendedLogsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getLogs: builder.query<Log[], FetchLogsParams>({
       query: (params) => {
         const searchParams = new URLSearchParams();
-        Object.entries(params).forEach(([key, value]) => {
+        Object.entries(params || {}).forEach(([key, value]) => {
           if (value !== undefined && value !== null && value !== '') {
             searchParams.append(key, String(value));
           }
         });
-        // Always send skip and limit, defaulting to 0 and 50 if not provided
         if (!searchParams.has('skip')) searchParams.append('skip', '0');
         if (!searchParams.has('limit')) searchParams.append('limit', '50');
-        return `/logs?${searchParams.toString()}`;
+        return { url: `/logs?${searchParams.toString()}`, method: 'GET' };
       },
+      providesTags: (result) =>
+        result
+          ? [
+            ...result.map((l) => ({ type: 'Logs' as const, id: l.id })),
+            { type: 'Logs' as const, id: 'LIST' },
+          ]
+          : [{ type: 'Logs' as const, id: 'LIST' }],
     }),
   }),
 });
 
-export const { useGetLogsQuery } = logsApi;
+export const { useGetLogsQuery } = extendedLogsApi;

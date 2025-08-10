@@ -19,7 +19,7 @@ export const ViolationTest: React.FC<ViolationTestProps> = ({
   } = useViolationTracker({
     assessmentId,
     enableTracking: true,
-    maxViolations: 100, // higher for testing
+    maxViolations: 10, // higher for testing
     onMaxViolationsReached: () => {
       alert("Max violations reached! Assessment would be submitted.");
     },

@@ -128,6 +128,26 @@ export interface ShortlistBulkResponse {
   message: string;
 }
 
+// Recruiter simple candidate list (from merged candidatesApi)
+export interface Candidate {
+  user_id: number;
+  name: string;
+  email: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CandidateTest {
+  test_id: number;
+  test_name: string;
+  status: string;
+  scheduled_at: string;
+  application_deadline: string;
+  assessment_deadline: string;
+  [key: string]: any; // TODO: tighten when backend stabilizes
+}
+
 const candidateApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get all assessments/tests assigned to a candidate
@@ -223,6 +243,22 @@ const candidateApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Candidates"]
     }),
+    // Merged: recruiter-wide candidate list
+    getCandidates: builder.query<Candidate[], void>({
+      query: () => ({ url: '/candidate-applications/recruiter/candidates', method: 'GET' }),
+      providesTags: (result) => result ? [
+        ...result.map(c => ({ type: 'Candidates' as const, id: c.user_id })),
+        { type: 'Candidates' as const, id: 'LIST' }
+      ] : [{ type: 'Candidates' as const, id: 'LIST' }]
+    }),
+    // Merged: tests for a specific candidate (recruiter view)
+    getCandidateTests: builder.query<CandidateTest[], number>({
+      query: (candidateId) => ({ url: `/candidate-applications/recruiter/candidate/${candidateId}/tests`, method: 'GET' }),
+      providesTags: (result, _err, arg) => result ? [
+        ...result.map(t => ({ type: 'Tests' as const, id: t.test_id })),
+        { type: 'Candidates' as const, id: arg }
+      ] : [{ type: 'Candidates' as const, id: arg }]
+    })
   })
 });
 
@@ -236,5 +272,7 @@ export const {
   useGetRecruiterDashboardSummaryQuery,
   useShortlistBulkCandidatesMutation,
   useGetCandidateAssessmentsQuery,
-  useGetCandidateApplicationQuery
+  useGetCandidateApplicationQuery,
+  useGetCandidatesQuery, // merged
+  useGetCandidateTestsQuery // merged
 } = candidateApi;

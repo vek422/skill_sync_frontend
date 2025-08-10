@@ -1,4 +1,3 @@
-
 export interface BulkAssessmentResponse {
   test_id: number;
   shortlisted_count: number;
@@ -7,15 +6,6 @@ export interface BulkAssessmentResponse {
 
 import { apiSlice } from "@/store/apiSlice";
 
-export interface AddCandidateToAssessmentRequest {
-  test_id: number;
-  candidate_id: number;
-}
-
-export interface AddCandidateToAssessmentResponse {
-  success: boolean;
-  message: string;
-}
 export interface CreateTestRequest {
   test_name: string;
   job_description: string;
@@ -153,22 +143,6 @@ const testApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Tests"]
     }),
 
-
-    // Update skill graph distribution
-    updateSkillGraph: builder.mutation<any, { test_id: number; total_questions: number; high: number; medium: number; low: number }>({
-      query: ({ test_id, total_questions, high, medium, low }) => {
-        const data = { total_questions, high, medium, low };
-        console.log('[updateSkillGraph] Sending data:', data);
-        return {
-          url: `/tests/${test_id}/update-skill-graph`,
-          method: 'PUT',
-          data
-        };
-      },
-      invalidatesTags: ["Tests"]
-    }),
-
-
     // Schedule test mutation
     scheduleTest: builder.mutation<any, { testId: number; data: { scheduled_at: string; application_deadline?: string; assessment_deadline?: string } }>({
       query: ({ testId, data }) => ({
@@ -207,14 +181,6 @@ const testApi = apiSlice.injectEndpoints({
         data,
       }),
       invalidatesTags: ["Tests"],
-    }),
-    // Add single candidate to assessment (shortlist)
-    addCandidateToAssessment: builder.mutation<AddCandidateToAssessmentResponse, AddCandidateToAssessmentRequest>({
-      query: ({ test_id, candidate_id }) => ({
-        url: `/tests/${test_id}/assessment/add-candidate?candidate_id=${candidate_id}`,
-        method: "POST",
-      }),
-      invalidatesTags: ["Candidates"],
     })
   })
 });
@@ -225,10 +191,8 @@ export const {
   useGetTestsQuery,
   useGetTestByIdQuery,
   useUpdateTestMutation,
-  useUpdateSkillGraphMutation,
   useScheduleTestMutation,
   useDeleteTestMutation,
-  useAddCandidateToAssessmentMutation,
   useBulkAddShortlistedToAssessmentsMutation,
   useUpdateQuestionCountsMutation
 } = testApi;

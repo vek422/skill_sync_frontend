@@ -26,7 +26,7 @@ import CandidateReport from "@/pages/recruiter/Component/CandidateReport";
 import CandidatesPage from "../pages/recruiter/CandidatesPage";
 import ChatInterface from "@/pages/ChatInterface";
 import Router from "@/pages/Router";
-import LogPage from "@/pages/LogPage";
+import LogPage from "@/pages/recruiter/LogPage";
 
 
 

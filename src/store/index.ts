@@ -7,8 +7,6 @@ import { authReducer } from "./slices/authSlice";
 import { assessmentReducer } from "./slices/assessmentSlice";
 import violationsReducer from "./slices/violationsSlice";
 import { apiSlice } from "./apiSlice";
-import { logsApi } from "../api/logsApi";
-import { candidatesApi } from "../api/candidatesApi";
 import { setAuthTokenGetter } from "../api";
 
 // Create the combined reducer including API slice
@@ -17,8 +15,6 @@ const rootReducer = combineReducers({
     assessment: assessmentReducer,
     violations: violationsReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
-    [logsApi.reducerPath]: logsApi.reducer,
-    [candidatesApi.reducerPath]: candidatesApi.reducer,
 });
 
 const persistConfig = {
@@ -43,18 +39,13 @@ export const store = configureStore({
                     "persist/FLUSH"
                 ]
             }
-        })
-            .concat(apiSlice.middleware)
-            .concat(logsApi.middleware)
-            .concat(candidatesApi.middleware)
+        }).concat(apiSlice.middleware)
 });
 
 export const persistor = persistStore(store);
 
 // Set up the auth token getter after store is created
 setAuthTokenGetter(() => store.getState().auth.token);
-
-
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;

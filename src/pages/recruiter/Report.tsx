@@ -22,16 +22,11 @@ export default function Report() {
     per_page: 10,
   });
 
-  console.log(assessmentsData, isLoading, error);
-
-  // Filter the assessments data based on status and search term
   const filteredAssessments = (assessmentsData?.assessments || []).filter(
     (assessment) => {
-      // Status filter
       const matchesStatus =
         statusFilter === "all" || assessment.status === statusFilter;
 
-      // Search filter (candidate name)
       const matchesSearch =
         searchTerm === "" ||
         assessment.candidate_name
@@ -48,14 +43,12 @@ export default function Report() {
 
   const handleSearchChange = (searchTerm: string) => {
     setSearchTerm(searchTerm);
-    // Reset to first page when searching
     setCurrentPage(1);
   };
 
   const handleFilterChange = (key: string, value: string) => {
     if (key === "status") {
       setStatusFilter(value);
-      // Reset to first page when filtering
       setCurrentPage(1);
     }
   };

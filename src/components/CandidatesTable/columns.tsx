@@ -1,7 +1,7 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 
-import type { Candidate } from "@/api/candidatesApi";
+import type { Candidate } from "@/api/candidateApi";
 
 const getInitials = (name: string) => {
   return name

@@ -26,7 +26,6 @@ const getColorForType = (type: string): string => {
 export default function TestDistributionChart({
   data,
 }: TestDistributionChartProps) {
-  // Transform data to include colors
   const transformedData = data.map((item) => ({
     id: item.type,
     label: item.value.toString().toUpperCase(),
